@@ -286,28 +286,23 @@ function descargar() {
         setTimeout(function(){URL.revokeObjectURL(url);}, 5000);
     } catch(e) { showError('Error: ' + e.message); }
 }
-function volverApp() {
-    // Cerrar la ventana actual y volver
-    if (window.opener && !window.opener.closed) {
-        // Si fue abierta con window.open, cerrar y enfocar la ventana padre
-        window.opener.focus();
-        window.close();
-    } else {
-        // Si no, usar history o navegar directamente
-        if (document.referrer && document.referrer !== '') {
-            // Volver a la página que nos envió aquí
-            window.location.href = document.referrer;
-        } else {
-            // Último recurso: ir al index.html
-            var currentUrl = window.location.href;
-            var indexUrl = currentUrl.replace('share.html', 'index.html');
-            window.location.href = indexUrl;
-        }
-    }
-}
-    
-  
 
+ function volverApp() {
+    // Recuperar la URL guardada
+    var appUrl = sessionStorage.getItem('appUrl');
+    
+    if (appUrl) {
+        // Volver a la URL guardada
+        sessionStorage.removeItem('appUrl');
+        window.location.href = appUrl;
+    } else {
+        // Fallback: construir URL del index
+        var currentUrl = window.location.href;
+        var indexUrl = currentUrl.split('?')[0].replace('share.html', 'index.html');
+        window.location.href = indexUrl;
+    }
+}   
+    
 window.onload = function() {
     var params  = new URLSearchParams(window.location.search);
     var type    = params.get('type') || 'pdf';
