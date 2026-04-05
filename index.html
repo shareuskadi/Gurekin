@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gurekin · Control de Horas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --accent: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg: #f1f5f9;
+            --surface: #ffffff;
+            --surface2: #f8fafc;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+            --shadow: 0 4px 16px rgba(37,99,235,0.10), 0 1px 4px rgba(0,0,0,0.06);
+            --shadow-lg: 0 12px 32px rgba(37,99,235,0.13), 0 2px 8px rgba(0,0,0,0.08);
+            --radius: 14px;
+            --radius-sm: 8px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 24px 20px;
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -200px; left: -200px;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(37,99,235,0.07) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1440px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* HEADER */
+        header {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 55%, var(--primary-light) 100%);
+            color: white;
+            border-radius: var(--radius);
+            padding: 30px 36px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            right: -60px; top: -60px;
+            width: 240px; height: 240px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .header-left h1 {
+            font-size: 1.85rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .header-left p {
+            font-size: 0.88rem;
+            opacity: 0.72;
+            margin-top: 2px;
+        }
+
+        .header-badge {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.22);
+            border-radius: 50px;
+            padding: 8px 20px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            white-space: nowrap;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* CONFIG */
+        .worker-config {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 18px;
+            box-shadow: var(--shadow);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .input-group { display: flex; flex-direction: column; gap: 6px; }
+
+        .input-group label {
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.73rem;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .input-group label i { color: var(--primary); }
+
+        input[type="text"], input[type="number"], select {
+            padding: 10px 13px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface2);
+            width: 100%;
+            font-family: inherit;
+            font-size: 0.95rem;
+            color: var(--text);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+        }
+
+        /* CONTROLS */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 13px 20px;
+            margin-bottom: 18px;
+            box-shadow: var(--shadow);
+            flex-wrap: wrap;
+            gap: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .month-nav { display: flex; align-items: center; gap: 10px; }
+        .month-nav select { min-width: 130px; font-weight: 600; }
+        .month-nav input[type="number"] { width: 82px; font-weight: 600; }
+
+        /* BUTTONS */
+        button {
+            padding: 9px 15px;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 600;
+            font-family: inherit;
+            font-size: 0.83rem;
+            transition: transform 0.15s, box-shadow 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 38px;
+        }
+
+        button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        button:active { transform: translateY(0); }
+
+        .btn-save    { background: var(--primary); color: white; }
+        .btn-backup  { background: var(--success); color: white; }
+        .btn-restore { background: var(--accent); color: white; }
+        .btn-export  { background: #475569; color: white; }
+        .btn-pdf     { background: #dc2626; color: white; }
+        .btn-add {
+            background: none;
+            border: 1.5px dashed rgba(37,99,235,0.4);
+            color: var(--primary);
+            width: 100%;
+            justify-content: center;
+            padding: 4px;
+            font-size: 0.77rem;
+            border-radius: 6px;
+            min-height: 28px;
+            margin-top: 2px;
+        }
+        .btn-add:hover { background: rgba(37,99,235,0.05); transform: none; box-shadow: none; }
+
+        /* AUTOSAVE */
+        #autosave-indicator {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.77rem;
+            color: var(--success);
+            font-weight: 600;
+        }
+        #autosave-indicator.show { display: flex; }
+
+        /* CALENDAR */
+        .calendar-container {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 18px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            min-width: 1020px;
+        }
+
+        .day-header {
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.75rem;
+            padding: 9px 4px;
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            border-radius: 7px;
+            color: white;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .day-header.weekend-header {
+            background: linear-gradient(135deg, #475569, #64748b);
+        }
+
+        /* DAY CARDS */
+        .day {
+            border: 1.5px solid var(--border);
+            border-radius: 11px;
+            min-height: 170px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            position: relative;
+            background: var(--surface);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .day:hover:not(.weekend) {
+            border-color: rgba(37,99,235,0.3);
+            box-shadow: 0 2px 12px rgba(37,99,235,0.08);
+        }
+
+        .day.weekend {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+            opacity: 0.7;
+        }
+
+        .day.holiday {
+            background: linear-gradient(135deg, #fffbeb, #fef9ee);
+            border-color: #fcd34d;
+        }
+
+        .day.current-day {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(37,99,235,0.18), var(--shadow);
+        }
+
+        /* Invisible spacer for offset cells */
+        .day-spacer {
+            background: none !important;
+            border: none !important;
+            min-height: 0 !important;
+            pointer-events: none;
+        }
+
+        .day-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .day-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .day-number {
+            font-weight: 700;
+            font-size: 0.9rem;
+            background: var(--surface2);
+            width: 27px; height: 27px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            border: 1.5px solid var(--border);
+            font-family: 'DM Mono', monospace;
+            flex-shrink: 0;
+        }
+
+        .day.current-day .day-number {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .day.weekend .day-number {
+            background: #e2e8f0;
+            color: #94a3b8;
+            border-color: #cbd5e1;
+        }
+
+        .day-name {
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .day.current-day .day-name { color: var(--primary); }
+        .day.weekend .day-name { color: #94a3b8; }
+
+        .day-total {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--success);
+            font-family: 'DM Mono', monospace;
+            background: rgba(16,185,129,0.1);
+            padding: 2px 7px;
+            border-radius: 20px;
+        }
+
+        .day-total.zero { color: #cbd5e1; background: transparent; }
+
+        .holiday-check {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.68rem;
+            color: #d97706;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .holiday-check input { accent-color: var(--accent); }
+
+        /* TIME SLOTS */
+        .time-slot {
+            background: var(--surface2);
+            padding: 5px 7px;
+            border-radius: 7px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .time-inputs { display: flex; align-items: center; gap: 3px; }
+
+        .time-inputs input[type="time"] {
+            width: 100%;
+            font-size: 0.7rem;
+            padding: 3px 4px;
+            font-family: 'DM Mono', monospace;
+            background: white;
+            border-radius: 5px;
+        }
+
+        .time-sep { font-size: 0.6rem; color: #94a3b8; flex-shrink: 0; }
+
+        .remove-slot {
+            color: #f87171;
+            cursor: pointer;
+            font-size: 10px;
+            flex-shrink: 0;
+            padding: 3px 4px;
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+        .remove-slot:hover { background: #fee2e2; }
+
+        .slot-note {
+            font-size: 0.67rem;
+            border: none;
+            background: transparent;
+            width: 100%;
+            color: var(--text-muted);
+            font-family: inherit;
+            padding: 1px 2px;
+        }
+        .slot-note::placeholder { color: #cbd5e1; }
+
+        /* SUMMARY */
+        .summary {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 22px 24px;
+            border: 1px solid var(--border);
+        }
+
+        .summary-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+            gap: 12px;
+        }
+
+        .summary-card {
+            background: var(--surface2);
+            padding: 16px 18px;
+            border-radius: 11px;
+            text-align: center;
+            border: 1.5px solid var(--border);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .summary-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+
+        .summary-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            border-radius: 11px 11px 0 0;
+        }
+
+        .card-workdays::before { background: #94a3b8; }
+        .card-target::before   { background: var(--primary); }
+        .card-days::before     { background: #8b5cf6; }
+        .card-normal::before   { background: var(--success); }
+        .card-extra::before    { background: var(--accent); }
+        .card-total::before    { background: linear-gradient(90deg, var(--primary-dark), var(--primary-light)); }
+
+        .summary-card.card-total {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-light));
+            color: white;
+            border-color: transparent;
+        }
+
+        .summary-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .card-total .summary-label { color: rgba(255,255,255,0.7); }
+
+        .summary-value {
+            font-size: 1.55rem;
+            font-weight: 700;
+            font-family: 'DM Mono', monospace;
+            line-height: 1.1;
+        }
+
+        .card-workdays .summary-value { color: #475569; }
+        .card-target   .summary-value { color: var(--primary); }
+        .card-days     .summary-value { color: #7c3aed; }
+        .card-normal   .summary-value { color: var(--success); }
+        .card-extra    .summary-value { color: var(--accent); }
+        .card-total    .summary-value { color: white; }
+
+        .summary-progress {
+            margin-top: 8px;
+            height: 3px;
+            background: rgba(0,0,0,0.08);
+            border-radius: 99px;
+            overflow: hidden;
+        }
+
+        .summary-progress-bar {
+            height: 100%;
+            border-radius: 99px;
+            transition: width 0.5s ease;
+        }
+
+        .card-normal .summary-progress-bar { background: var(--success); }
+        .card-total  .summary-progress      { background: rgba(255,255,255,0.2); }
+        .card-total  .summary-progress-bar  { background: rgba(255,255,255,0.85); }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            body { padding: 12px; }
+            header { padding: 20px; }
+            .header-left h1 { font-size: 1.4rem; }
+            .worker-config { grid-template-columns: 1fr; }
+            .controls { flex-direction: column; align-items: stretch; }
+            .calendar { grid-template-columns: 1fr; min-width: 0; gap: 10px; }
+            .day-header { display: none; }
+            .day { min-height: auto; }
+            .summary-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 480px) {
+            .summary-grid { grid-template-columns: 1fr; }
+            .summary-value { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <header>
+        <div class="header-left">
+            <h1><i class="fas fa-clock" style="margin-right:10px;opacity:0.85"></i>Control de Horas</h1>
+            <p>Registro de jornada y horas extraordinarias</p>
+        </div>
+        <div class="header-badge" id="header-month-label">—</div>
+    </header>
+
+    <div class="worker-config">
+        <div class="input-group">
+            <label><i class="fas fa-user"></i> Nombre del Trabajador</label>
+            <input type="text" id="worker-name" placeholder="Ej. Ane Etxebarria" oninput="autoSave()">
+        </div>
+        <div class="input-group">
+            <label><i class="fas fa-briefcase"></i> Jornada Semanal (Horas)</label>
+            <input type="number" id="contract-hours" value="40" min="1" max="80" oninput="updateSummary(); autoSave()">
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="month-nav">
+            <select id="month-select"></select>
+            <input type="number" id="year-input" style="width:82px;">
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <span id="autosave-indicator"><i class="fas fa-check-circle"></i> Guardado</span>
+            <button class="btn-backup"  onclick="exportBackup()"><i class="fas fa-download"></i> Backup</button>
+            <button class="btn-restore" onclick="restoreBackup()"><i class="fas fa-upload"></i> Restaurar</button>
+            <button class="btn-pdf"     onclick="sharePDF()"><i class="fas fa-share-alt"></i> Compartir PDF</button>
+            <button class="btn-save"    onclick="saveData(true)"><i class="fas fa-save"></i> Guardar</button>
+        </div>
+    </div>
+
+    <div class="calendar-container">
+        <div class="calendar" id="calendar"></div>
+    </div>
+
+    <div class="summary">
+        <div class="summary-title"><i class="fas fa-chart-bar"></i> Resumen del mes</div>
+        <div class="summary-grid">
+            <div class="summary-card card-workdays">
+                <div class="summary-label">Días Laborables</div>
+                <div class="summary-value" id="stat-workdays">0</div>
+            </div>
+            <div class="summary-card card-target">
+                <div class="summary-label">Objetivo Mensual</div>
+                <div class="summary-value" id="stat-target">0h</div>
+            </div>
+            <div class="summary-card card-days">
+                <div class="summary-label">Días Trabajados</div>
+                <div class="summary-value" id="stat-days">0</div>
+            </div>
+            <div class="summary-card card-normal">
+                <div class="summary-label">Horas Normales</div>
+                <div class="summary-value" id="stat-normal">0h</div>
+                <div class="summary-progress"><div class="summary-progress-bar" id="progress-normal" style="width:0%"></div></div>
+            </div>
+            <div class="summary-card card-extra">
+                <div class="summary-label">Horas Extras</div>
+                <div class="summary-value" id="stat-extra">0h</div>
+            </div>
+            <div class="summary-card card-total">
+                <div class="summary-label">Total Mensual</div>
+                <div class="summary-value" id="stat-total">0h</div>
+                <div class="summary-progress"><div class="summary-progress-bar" id="progress-total" style="width:0%"></div></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+<script>
+    const MONTHS    = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+    const DAYS_FULL = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+
+    let currentData   = {};
+    let autosaveTimer = null;
+
+    function init() {
+        const now = new Date();
+        const monthSelect = document.getElementById('month-select');
+        MONTHS.forEach((m, i) => {
+            const opt = document.createElement('option');
+            opt.value = i; opt.textContent = m;
+            monthSelect.appendChild(opt);
+        });
+        monthSelect.value = now.getMonth();
+        document.getElementById('year-input').value = now.getFullYear();
+        document.getElementById('worker-name').value    = localStorage.getItem('workerName')    || '';
+        document.getElementById('contract-hours').value = localStorage.getItem('contractHours') || 40;
+
+        monthSelect.onchange = renderCalendar;
+        document.getElementById('year-input').onchange = renderCalendar;
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        const month       = parseInt(document.getElementById('month-select').value);
+        const year        = parseInt(document.getElementById('year-input').value);
+        const firstDay    = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        document.getElementById('header-month-label').textContent = `${MONTHS[month]} ${year}`;
+
+        const calendar = document.getElementById('calendar');
+        calendar.innerHTML = '';
+
+        // Column headers
+        DAYS_FULL.forEach((d, i) => {
+            const h = document.createElement('div');
+            h.className = `day-header${i >= 5 ? ' weekend-header' : ''}`;
+            h.textContent = d;
+            calendar.appendChild(h);
+        });
+
+        // Invisible offset spacers (no visual empty cards)
+        const offset = (firstDay + 6) % 7;
+        for (let i = 0; i < offset; i++) {
+            const sp = document.createElement('div');
+            sp.className = 'day day-spacer';
+            calendar.appendChild(sp);
+        }
+
+        const storageKey = `workHours_${year}_${month}`;
+        currentData = JSON.parse(localStorage.getItem(storageKey) || '{}');
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const date      = new Date(year, month, d);
+            const dow       = date.getDay();               // 0=Sun
+            const isWeekend = dow === 0 || dow === 6;
+            const isToday   = new Date().toDateString() === date.toDateString();
+            const isHoliday = currentData[d]?.isHoliday && !isWeekend;
+            const dayName   = DAYS_FULL[(dow + 6) % 7];   // Mon=0
+
+            const dayEl = document.createElement('div');
+            dayEl.id = `day-card-${d}`;
+            dayEl.className = [
+                'day',
+                isWeekend ? 'weekend' : '',
+                isToday   ? 'current-day' : '',
+                isHoliday ? 'holiday' : ''
+            ].filter(Boolean).join(' ');
+
+            dayEl.innerHTML = `
+                <div class="day-header-row">
+                    <div class="day-info">
+                        <div class="day-number">${d}</div>
+                        <div class="day-name">${dayName}</div>
+                    </div>
+                    <div class="day-total zero" id="total-${d}">0h</div>
+                </div>
+                ${!isWeekend ? `
+                <label class="holiday-check">
+                    <input type="checkbox" ${currentData[d]?.isHoliday ? 'checked' : ''}
+                        onchange="updateHoliday(${d}, this.checked)">
+                    <i class="fas fa-umbrella-beach" style="font-size:8px"></i> Festivo
+                </label>` : ''}
+                <div id="slots-${d}"></div>
+                <button class="btn-add" onclick="addSlot(${d})"><i class="fas fa-plus"></i> Añadir tramo</button>
+            `;
+            calendar.appendChild(dayEl);
+
+            const slots = currentData[d]?.slots || [{start:'', end:'', note:''}];
+            slots.forEach((s, i) => renderSlot(d, i, s));
+            calculateDay(d);
+        }
+
+        updateSummary();
+
+        if (month === new Date().getMonth() && year === new Date().getFullYear()) {
+            setTimeout(() => {
+                const el = document.querySelector('.current-day');
+                if (el) el.scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
+            }, 120);
+        }
+    }
+
+    function renderSlot(day, index, data) {
+        const container = document.getElementById(`slots-${day}`);
+        const slot = document.createElement('div');
+        slot.className = 'time-slot';
+        slot.innerHTML = `
+            <div class="time-inputs">
+                <input type="time" value="${data.start}" onchange="updateSlot(${day},${index},'start',this.value)">
+                <span class="time-sep">→</span>
+                <input type="time" value="${data.end}"   onchange="updateSlot(${day},${index},'end',this.value)">
+                ${index > 0 ? `<i class="fas fa-times remove-slot" onclick="removeSlot(${day},${index})"></i>` : ''}
+            </div>
+            <input class="slot-note" type="text" placeholder="Nota…" value="${data.note||''}"
+                onchange="updateSlot(${day},${index},'note',this.value)">
+        `;
+        container.appendChild(slot);
+    }
+
+    function addSlot(day) {
+        if (!currentData[day]) currentData[day] = {slots:[], isHoliday:false};
+        currentData[day].slots.push({start:'', end:'', note:''});
+        refreshDay(day);
+    }
+
+    function removeSlot(day, index) {
+        currentData[day].slots.splice(index, 1);
+        refreshDay(day);
+    }
+
+    function updateSlot(day, index, field, value) {
+        if (!currentData[day]) currentData[day] = {slots:[{start:'',end:'',note:''}], isHoliday:false};
+        currentData[day].slots[index][field] = value;
+        calculateDay(day);
+        updateSummary();
+        autoSave();
+    }
+
+    function updateHoliday(day, value) {
+        if (!currentData[day]) currentData[day] = {slots:[], isHoliday:false};
+        currentData[day].isHoliday = value;
+        const card = document.getElementById(`day-card-${day}`);
+        if (card) card.classList.toggle('holiday', value);
+        updateSummary();
+        autoSave();
+    }
+
+    function refreshDay(day) {
+        const container = document.getElementById(`slots-${day}`);
+        container.innerHTML = '';
+        currentData[day].slots.forEach((s, i) => renderSlot(day, i, s));
+        calculateDay(day);
+        updateSummary();
+        autoSave();
+    }
+
+    function calculateDay(day) {
+        const slots = currentData[day]?.slots || [];
+        let mins = 0;
+        slots.forEach(s => {
+            if (s.start && s.end) {
+                const [h1,m1] = s.start.split(':').map(Number);
+                const [h2,m2] = s.end.split(':').map(Number);
+                let diff = (h2*60+m2) - (h1*60+m1);
+                if (diff < 0) diff += 1440;
+                mins += diff;
+            }
+        });
+        const el = document.getElementById(`total-${day}`);
+        if (el) {
+            el.textContent = formatMins(mins);
+            el.className = `day-total${mins === 0 ? ' zero' : ''}`;
+        }
+        return mins;
+    }
+
+    function formatMins(m) {
+        const h = Math.floor(m / 60);
+        const mins = m % 60;
+        return `${h}h${mins > 0 ? ` ${mins}m` : ''}`;
+    }
+
+    function updateSummary() {
+        const month         = parseInt(document.getElementById('month-select').value);
+        const year          = parseInt(document.getElementById('year-input').value);
+        const contractHours = parseFloat(document.getElementById('contract-hours').value) || 40;
+        const daysInMonth   = new Date(year, month + 1, 0).getDate();
+
+        // Días laborables del mes (L-V sin festivos marcados)
+        let workDays = 0;
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dow       = new Date(year, month, d).getDay();
+            const isWeekend = dow === 0 || dow === 6;
+            const isHoliday = currentData[d]?.isHoliday && !isWeekend;
+            if (!isWeekend && !isHoliday) workDays++;
+        }
+
+        const dailyMins  = (contractHours / 5) * 60;
+        const targetMins = workDays * dailyMins;
+
+        let totalMins = 0, workedDays = 0;
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dayMins = calculateDay(d);
+            if (dayMins > 0) workedDays++;
+            totalMins += dayMins;
+        }
+
+        const normalMins  = Math.min(totalMins, targetMins);
+        const extraMins   = Math.max(0, totalMins - targetMins);
+        const progressPct = targetMins > 0 ? Math.min(100, Math.round((normalMins / targetMins) * 100)) : 0;
+        const totalPct    = targetMins > 0 ? Math.min(100, Math.round((totalMins  / targetMins) * 100)) : 0;
+
+        document.getElementById('stat-workdays').textContent = workDays;
+        document.getElementById('stat-target').textContent   = formatMins(targetMins);
+        document.getElementById('stat-days').textContent     = workedDays;
+        document.getElementById('stat-normal').textContent   = formatMins(normalMins);
+        document.getElementById('stat-extra').textContent    = formatMins(extraMins);
+        document.getElementById('stat-total').textContent    = formatMins(totalMins);
+        document.getElementById('progress-normal').style.width = progressPct + '%';
+        document.getElementById('progress-total').style.width  = totalPct + '%';
+    }
+
+    // AUTOSAVE
+    function autoSave() {
+        clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(() => {
+            saveData(false);
+            const ind = document.getElementById('autosave-indicator');
+            ind.style.animation = 'none';
+            ind.classList.add('show');
+            setTimeout(() => ind.classList.remove('show'), 2200);
+        }, 700);
+    }
+
+    function saveData(showAlert = false) {
+        const month = document.getElementById('month-select').value;
+        const year  = document.getElementById('year-input').value;
+        localStorage.setItem(`workHours_${year}_${month}`, JSON.stringify(currentData));
+        localStorage.setItem('workerName',    document.getElementById('worker-name').value);
+        localStorage.setItem('contractHours', document.getElementById('contract-hours').value);
+        if (showAlert) alert('✅ Datos guardados correctamente.');
+    }
+
+    function exportBackup() {
+        const all = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k.startsWith('workHours_') || k === 'workerName' || k === 'contractHours') {
+                all[k] = localStorage.getItem(k);
+            }
+        }
+        const blob = new Blob([JSON.stringify(all, null, 2)], {type:'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `backup_horas_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+    }
+
+    function restoreBackup() {
+        const input = document.createElement('input');
+        input.type = 'file'; input.accept = '.json';
+        input.onchange = e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    if (confirm('¿Restaurar el backup? Se sobrescribirán los datos actuales.')) {
+                        const keys = [];
+                        for (let i = 0; i < localStorage.length; i++) {
+                            const k = localStorage.key(i);
+                            if (k.startsWith('workHours_') || k === 'workerName' || k === 'contractHours') keys.push(k);
+                        }
+                        keys.forEach(k => localStorage.removeItem(k));
+                        Object.entries(data).forEach(([k,v]) => localStorage.setItem(k, v));
+                        location.reload();
+                    }
+                } catch { alert('Error al leer el archivo de backup.'); }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+
+    function exportToTxt() {
+        const name  = document.getElementById('worker-name').value || 'Trabajador';
+        const month = MONTHS[document.getElementById('month-select').value];
+        const year  = document.getElementById('year-input').value;
+
+        let c = `REPORTE MENSUAL DE HORAS\n=========================\n`;
+        c += `Trabajador: ${name}\nPeriodo: ${month} ${year}\n\n`;
+        c += `RESUMEN:\n`;
+        c += `Días Laborables: ${document.getElementById('stat-workdays').textContent}\n`;
+        c += `Objetivo Mensual: ${document.getElementById('stat-target').textContent}\n`;
+        c += `Días Trabajados: ${document.getElementById('stat-days').textContent}\n`;
+        c += `Horas Normales: ${document.getElementById('stat-normal').textContent}\n`;
+        c += `Horas Extras: ${document.getElementById('stat-extra').textContent}\n`;
+        c += `Total Mensual: ${document.getElementById('stat-total').textContent}\n\nDETALLE DIARIO:\n-------------------------\n`;
+
+        const mon = parseInt(document.getElementById('month-select').value);
+        const yr  = document.getElementById('year-input').value;
+        const dim = new Date(yr, mon + 1, 0).getDate();
+        for (let d = 1; d <= dim; d++) {
+            const dayMins = calculateDay(d);
+            if (dayMins > 0 || currentData[d]?.isHoliday) {
+                const date = new Date(yr, mon, d);
+                const dn   = DAYS_FULL[(date.getDay() + 6) % 7];
+                c += `${d} ${dn}: ${formatMins(dayMins)}${currentData[d]?.isHoliday ? ' [FESTIVO]' : ''}\n`;
+                if (currentData[d]?.slots) {
+                    currentData[d].slots.forEach(s => {
+                        if (s.start && s.end) c += `  - ${s.start} → ${s.end}${s.note ? ` (${s.note})` : ''}\n`;
+                    });
+                }
+            }
+        }
+
+        const blob = new Blob([c], {type:'text/plain'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `reporte_${name}_${month}_${year}.txt`;
+        a.click();
+    }
+
+    function buildPDFDoc() {
+        const { jsPDF } = window.jspdf;
+        const name          = document.getElementById('worker-name').value || 'Trabajador';
+        const monthIdx      = parseInt(document.getElementById('month-select').value);
+        const year          = parseInt(document.getElementById('year-input').value);
+        const contractHours = parseFloat(document.getElementById('contract-hours').value) || 40;
+        const monthName     = MONTHS[monthIdx];
+        const daysInMonth   = new Date(year, monthIdx + 1, 0).getDate();
+
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const W = doc.internal.pageSize.getWidth();
+        const H = doc.internal.pageSize.getHeight();
+        const margin = 14;
+
+        const hexToRgb = hex => {
+            const r = parseInt(hex.slice(1,3),16);
+            const g = parseInt(hex.slice(3,5),16);
+            const b = parseInt(hex.slice(5,7),16);
+            return [r, g, b];
+        };
+        const PRIMARY       = hexToRgb('#1d4ed8');
+        const PRIMARY_LIGHT = hexToRgb('#3b82f6');
+        const SUCCESS       = hexToRgb('#10b981');
+        const ACCENT        = hexToRgb('#f59e0b');
+        const DANGER        = hexToRgb('#dc2626');
+        const GREY          = hexToRgb('#64748b');
+        const LIGHT_BG      = hexToRgb('#f1f5f9');
+        const BORDER        = hexToRgb('#e2e8f0');
+        const TEXT          = hexToRgb('#0f172a');
+
+        // HEADER
+        doc.setFillColor(...PRIMARY);
+        doc.roundedRect(margin, 10, W - margin*2, 28, 4, 4, 'F');
+        doc.setFillColor(...PRIMARY_LIGHT);
+        doc.circle(W - margin - 10, 10 + 14, 20, 'F');
+        doc.setTextColor(255,255,255);
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(16);
+        doc.text('Control de Horas Laborales', margin + 6, 21);
+        doc.setFont('helvetica','normal');
+        doc.setFontSize(9);
+        doc.setTextColor(200,215,255);
+        doc.text('Registro de jornada y horas extraordinarias', margin + 6, 27);
+        doc.setFillColor(255,255,255);
+        doc.roundedRect(W - margin - 44, 14, 42, 12, 3, 3, 'F');
+        doc.setTextColor(...PRIMARY);
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(9);
+        doc.text(`${monthName} ${year}`, W - margin - 23, 21.5, { align:'center' });
+
+        // WORKER INFO
+        let y = 46;
+        doc.setFillColor(...LIGHT_BG);
+        doc.roundedRect(margin, y, W - margin*2, 14, 3, 3, 'F');
+        doc.setTextColor(...GREY);
+        doc.setFont('helvetica','normal');
+        doc.setFontSize(8);
+        doc.text('TRABAJADOR', margin + 5, y + 5.5);
+        doc.text('JORNADA SEMANAL', margin + 90, y + 5.5);
+        doc.setTextColor(...TEXT);
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(10);
+        doc.text(name, margin + 5, y + 11);
+        doc.text(`${contractHours}h / semana`, margin + 90, y + 11);
+
+        // RESUMEN
+        y += 20;
+        doc.setTextColor(...PRIMARY);
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(9);
+        doc.text('RESUMEN DEL MES', margin, y);
+        doc.setDrawColor(...PRIMARY_LIGHT);
+        doc.setLineWidth(0.4);
+        doc.line(margin, y + 1.5, W - margin, y + 1.5);
+
+        y += 6;
+        const cardW = (W - margin*2 - 10) / 3;
+        const cards = [
+            { label:'Días Laborables', value:document.getElementById('stat-workdays').textContent, color:GREY },
+            { label:'Objetivo Mensual', value:document.getElementById('stat-target').textContent,  color:PRIMARY },
+            { label:'Días Trabajados',  value:document.getElementById('stat-days').textContent,    color:[124,58,237] },
+            { label:'Horas Normales',   value:document.getElementById('stat-normal').textContent,  color:SUCCESS },
+            { label:'Horas Extras',     value:document.getElementById('stat-extra').textContent,   color:ACCENT },
+            { label:'Total Mensual',    value:document.getElementById('stat-total').textContent,   color:DANGER },
+        ];
+        cards.forEach((card, i) => {
+            const col = i % 3;
+            const row = Math.floor(i / 3);
+            const cx  = margin + col * (cardW + 5);
+            const cy  = y + row * 22;
+            doc.setFillColor(...LIGHT_BG);
+            doc.roundedRect(cx, cy, cardW, 18, 3, 3, 'F');
+            doc.setFillColor(...card.color);
+            doc.roundedRect(cx, cy, cardW, 2, 1, 1, 'F');
+            doc.setTextColor(...GREY);
+            doc.setFont('helvetica','normal');
+            doc.setFontSize(7);
+            doc.text(card.label.toUpperCase(), cx + cardW/2, cy + 8, { align:'center' });
+            doc.setTextColor(...card.color);
+            doc.setFont('helvetica','bold');
+            doc.setFontSize(12);
+            doc.text(card.value, cx + cardW/2, cy + 15, { align:'center' });
+        });
+
+        // PROGRESS BAR
+        y += 50;
+        const toMins = str => {
+            const h = parseFloat(str.match(/(\d+)h/)?.[1] || 0);
+            const m = parseFloat(str.match(/(\d+)m/)?.[1] || 0);
+            return h * 60 + m;
+        };
+        const tMins = toMins(document.getElementById('stat-target').textContent);
+        const nMins = toMins(document.getElementById('stat-normal').textContent);
+        const pct   = tMins > 0 ? Math.min(1, nMins / tMins) : 0;
+        doc.setTextColor(...GREY);
+        doc.setFont('helvetica','normal');
+        doc.setFontSize(7.5);
+        doc.text('PROGRESO HACIA EL OBJETIVO', margin, y);
+        doc.text(`${Math.round(pct * 100)}%`, W - margin, y, { align:'right' });
+        y += 3;
+        doc.setFillColor(...BORDER);
+        doc.roundedRect(margin, y, W - margin*2, 4, 2, 2, 'F');
+        doc.setFillColor(...SUCCESS);
+        doc.roundedRect(margin, y, (W - margin*2) * pct, 4, 2, 2, 'F');
+
+        // DETALLE DIARIO
+        y += 10;
+        doc.setTextColor(...PRIMARY);
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(9);
+        doc.text('DETALLE DIARIO', margin, y);
+        doc.setDrawColor(...PRIMARY_LIGHT);
+        doc.setLineWidth(0.4);
+        doc.line(margin, y + 1.5, W - margin, y + 1.5);
+        y += 5;
+
+        const rows = [];
+        for (let d = 1; d <= daysInMonth; d++) {
+            const date      = new Date(year, monthIdx, d);
+            const dow       = date.getDay();
+            const isWeekend = dow === 0 || dow === 6;
+            const isHoliday = currentData[d]?.isHoliday && !isWeekend;
+            const dayName   = DAYS_FULL[(dow + 6) % 7];
+            const dayMins   = calculateDay(d);
+            const slots     = currentData[d]?.slots || [];
+            const tramos    = slots.filter(s => s.start && s.end)
+                .map(s => `${s.start}→${s.end}${s.note ? ` (${s.note})` : ''}`).join('  |  ');
+            const tipo = isWeekend ? 'Fin de semana' : isHoliday ? 'Festivo' : 'Laborable';
+            rows.push({ d, dayName, tipo, tramos, total: dayMins > 0 ? formatMins(dayMins) : '—', isWeekend, isHoliday, hasHours: dayMins > 0 });
+        }
+
+        doc.autoTable({
+            startY: y,
+            margin: { left: margin, right: margin },
+            head: [['Día','Nombre','Tipo','Tramos horarios','Total']],
+            body: rows.map(r => [r.d, r.dayName, r.tipo, r.tramos || (r.isHoliday ? 'Festivo' : '—'), r.total]),
+            headStyles: { fillColor: PRIMARY, textColor: [255,255,255], fontStyle:'bold', fontSize:8, cellPadding:3 },
+            bodyStyles: { fontSize:7.5, cellPadding:2.5, textColor: TEXT },
+            columnStyles: {
+                0: { cellWidth:10, halign:'center', fontStyle:'bold' },
+                1: { cellWidth:16 },
+                2: { cellWidth:24 },
+                3: { cellWidth:'auto' },
+                4: { cellWidth:18, halign:'center', fontStyle:'bold' },
+            },
+            alternateRowStyles: { fillColor:[248,250,252] },
+            didParseCell: (data) => {
+                if (data.section === 'body') {
+                    const row = rows[data.row.index];
+                    if (row.isWeekend) { data.cell.styles.textColor = [148,163,184]; data.cell.styles.fillColor = [248,250,252]; }
+                    else if (row.isHoliday) { data.cell.styles.fillColor = [255,251,235]; data.cell.styles.textColor = [180,120,0]; }
+                    else if (row.hasHours && data.column.index === 4) { data.cell.styles.textColor = SUCCESS; }
+                }
+            },
+        });
+
+        // FOOTER
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let p = 1; p <= pageCount; p++) {
+            doc.setPage(p);
+            doc.setFontSize(7);
+            doc.setTextColor(...GREY);
+            doc.setFont('helvetica','normal');
+            doc.text(
+                `Generado el ${new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'})}  ·  Página ${p} de ${pageCount}`,
+                W / 2, H - 8, { align:'center' }
+            );
+            doc.setDrawColor(...BORDER);
+            doc.setLineWidth(0.3);
+            doc.line(margin, H - 11, W - margin, H - 11);
+        }
+
+        return { doc, name, monthName, year };
+    }
+
+    async function sharePDF() {
+        const { doc, name, monthName, year } = buildPDFDoc();
+        const filename = `horas_${name.replace(/\s+/g,'_')}_${monthName}_${year}.pdf`;
+
+        // Web Share API con ficheros (Chrome Android nativo, Safari iOS)
+        if (navigator.canShare) {
+            const pdfBlob = doc.output('blob');
+            const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+            if (navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        title: `Horas ${monthName} ${year}`,
+                        text: `Reporte de horas de ${name} — ${monthName} ${year}`,
+                        files: [file]
+                    });
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                }
+            }
+        }
+
+        // WebToApp / WebView: navegar directamente al blob URL
+        // Configurar en WebToApp la regex: blob:.* como URL de descarga
+        const pdfBlob = doc.output('blob');
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        window.location.href = blobUrl;
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>
