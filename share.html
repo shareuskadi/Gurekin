@@ -274,12 +274,30 @@ function descargar() {
         setTimeout(function(){URL.revokeObjectURL(url);}, 5000);
     } catch(e) { showError('Error: ' + e.message); }
 }
-
 function volverApp() {
-    // Deep link: navegar a la URL raiz de la app
-    // Android intercepta esta URL y abre la app WebToApp en lugar de Chrome
-    var appUrl = window.location.href.split('/share.html')[0] + '/';
-    window.location.href = appUrl;
+    // Estrategia múltiple para volver a la app
+    
+    // 1. Intentar usar history.back() si hay historial
+    if (window.history.length > 1) {
+        window.history.back();
+        return;
+    }
+    
+    // 2. Si no hay historial, intentar construir la URL del index.html
+    var currentUrl = window.location.href;
+    var indexUrl;
+    
+    // Si estamos en file:// (archivo local)
+    if (currentUrl.indexOf('file://') === 0) {
+        // Reemplazar share.html por index.html
+        indexUrl = currentUrl.replace('/share.html', '/index.html').replace('share.html', 'index.html');
+    } else {
+        // Si estamos en HTTP(S)
+        indexUrl = currentUrl.split('/share.html')[0] + '/index.html';
+    }
+    
+    // 3. Navegar al index
+    window.location.href = indexUrl;
 }
 
 window.onload = function() {
