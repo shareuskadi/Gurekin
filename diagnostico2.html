@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnostico Share</title>
+<style>
+body { font-family: sans-serif; padding: 20px; background: #f0f4ff; }
+.box { background: white; border-radius: 10px; padding: 12px; margin: 8px 0; font-size: 13px; }
+.ok  { border-left: 4px solid #10b981; }
+.err { border-left: 4px solid #ef4444; }
+.warn{ border-left: 4px solid #f59e0b; }
+button { background:#2563eb; color:white; border:none; padding:12px 20px; border-radius:8px; font-size:14px; margin:8px 4px; cursor:pointer; }
+</style>
+</head>
+<body>
+<h2>Diagnostico compartir</h2>
+<div id="log"></div>
+<button onclick="testShareText()">Test: Compartir texto</button>
+<button onclick="testShareFile()">Test: Compartir fichero</button>
+
+<script>
+function log(msg, type) {
+    var d = document.createElement('div');
+    d.className = 'box ' + (type || 'ok');
+    d.textContent = msg;
+    document.getElementById('log').appendChild(d);
+}
+
+log('navigator.share: ' + (navigator.share ? 'SI' : 'NO'), navigator.share ? 'ok' : 'err');
+log('navigator.canShare: ' + (navigator.canShare ? 'SI' : 'NO'), navigator.canShare ? 'ok' : 'err');
+
+var testBlob = new Blob(['test'], {type:'application/pdf'});
+var testFile = new File([testBlob], 'test.pdf', {type:'application/pdf'});
+var canShareFile = false;
+try {
+    canShareFile = navigator.canShare && navigator.canShare({files:[testFile]});
+} catch(e) { log('canShare error: ' + e, 'err'); }
+log('canShare con fichero PDF: ' + (canShareFile ? 'SI' : 'NO'), canShareFile ? 'ok' : 'err');
+
+function testShareText() {
+    if (!navigator.share) { log('navigator.share no disponible', 'err'); return; }
+    navigator.share({title:'Test', text:'Texto de prueba'})
+        .then(function() { log('Compartir texto: OK', 'ok'); })
+        .catch(function(e) { log('Compartir texto error: ' + e.name + ' - ' + e.message, 'err'); });
+}
+
+function testShareFile() {
+    if (!navigator.share) { log('navigator.share no disponible', 'err'); return; }
+    var blob = new Blob(['%PDF-1.4 test'], {type:'application/pdf'});
+    var file = new File([blob], 'prueba.pdf', {type:'application/pdf'});
+    navigator.share({title:'Test PDF', files:[file]})
+        .then(function() { log('Compartir fichero: OK', 'ok'); })
+        .catch(function(e) { log('Compartir fichero error: ' + e.name + ' - ' + e.message, e.name === 'AbortError' ? 'warn' : 'err'); });
+}
+</script>
+</body>
+</html>
