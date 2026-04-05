@@ -17,8 +17,8 @@ h2 { color: #1d4ed8; margin: 0 0 6px; font-size: 1.25rem; }
 button { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; margin: 5px 0; }
 .btn-share    { background: #2563eb; color: white; }
 .btn-download { background: #10b981; color: white; }
-.btn-back     { background: #f1f5f9; color: #475569; margin-top: 8px; }
-.back-hint    { color: #94a3b8; font-size: 0.82rem; margin-top: 18px; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px dashed #e2e8f0; }
+.btn-back  { background: #f1f5f9; color: #475569; margin-top: 8px; }
+.back-hint { color: #94a3b8; font-size: 0.82rem; margin-top: 18px; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px dashed #e2e8f0; }
 .error  { color: #ef4444; font-size: 0.83rem; margin-top: 14px; padding: 10px; background: #fef2f2; border-radius: 8px; }
 .loading { color: #64748b; font-size: 0.9rem; margin: 16px 0; }
 </style>
@@ -34,7 +34,7 @@ button { width: 100%; padding: 14px; border: none; border-radius: 10px; font-siz
         <button class="btn-share"    id="btn-share"    onclick="compartir()">&#8599; Compartir (WhatsApp, email...)</button>
         <button class="btn-download" id="btn-download" onclick="descargar()">&#8595; Guardar en el movil</button>
     </div>
-    <div class="back-hint">&#8592; Pulsa el boton <b>Atras</b> del movil para volver a la app</div>
+    <button class="btn-back" onclick="volverApp()">&#8592; Volver a la app</button>
     <div class="error" id="error" style="display:none"></div>
 </div>
 <script>
@@ -273,6 +273,13 @@ function descargar() {
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         setTimeout(function(){URL.revokeObjectURL(url);}, 5000);
     } catch(e) { showError('Error: ' + e.message); }
+}
+
+function volverApp() {
+    // Deep link: navegar a la URL raiz de la app
+    // Android intercepta esta URL y abre la app WebToApp en lugar de Chrome
+    var appUrl = window.location.href.split('/share.html')[0] + '/';
+    window.location.href = appUrl;
 }
 
 window.onload = function() {
