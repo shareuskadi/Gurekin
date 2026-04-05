@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gurekin</title>
+<style>
+body { font-family: sans-serif; padding: 20px; background: #f0f4ff; }
+h2 { color: #1d4ed8; }
+.log { background: white; border-radius: 8px; padding: 10px; margin: 5px 0; font-size: 13px; border-left: 4px solid #10b981; }
+.err { border-left-color: #ef4444; }
+</style>
+</head>
+<body>
+<h2>Gurekin - Test</h2>
+<div id="log"></div>
+<script>
+function log(msg, ok) {
+    var d = document.createElement('div');
+    d.className = ok === false ? 'log err' : 'log';
+    d.textContent = msg;
+    document.getElementById('log').appendChild(d);
+}
+
+log('JS arrancado');
+
+try {
+    log('User agent: ' + navigator.userAgent.substring(0, 80));
+} catch(e) { log('UA error: ' + e, false); }
+
+try {
+    localStorage.setItem('t','1');
+    localStorage.removeItem('t');
+    log('localStorage OK');
+} catch(e) { log('localStorage ERROR: ' + e, false); }
+
+try {
+    var x = 'hola' + ' ' + 'mundo';
+    log('Strings OK');
+} catch(e) { log('Strings ERROR', false); }
+
+try {
+    var arr = [1,2,3];
+    var s = arr.map(function(n){ return n*2; }).join(',');
+    log('Arrays OK: ' + s);
+} catch(e) { log('Arrays ERROR: ' + e, false); }
+
+try {
+    var d = new Date();
+    log('Date OK: ' + d.getFullYear());
+} catch(e) { log('Date ERROR: ' + e, false); }
+
+try {
+    var el = document.createElement('div');
+    el.textContent = 'test';
+    document.body.appendChild(el);
+    document.body.removeChild(el);
+    log('DOM manipulation OK');
+} catch(e) { log('DOM ERROR: ' + e, false); }
+
+log('Fin del script - todo OK hasta aqui');
+</script>
+</body>
+</html>
