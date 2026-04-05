@@ -1196,24 +1196,21 @@
         var year     = result.year;
         var filename = 'horas_' + name.replace(/\s+/g,'_') + '_' + month + '_' + year + '.pdf';
 
-        // Web Share API con ficheros
-        if (navigator.canShare) {
-            var pdfBlob = doc.output('blob');
-            var file = new File([pdfBlob], filename, {type:'application/pdf'});
-            if (navigator.canShare({files:[file]})) {
-                navigator.share({
-                    title: 'Horas ' + month + ' ' + year,
-                    text:  'Reporte de horas de ' + name + ' - ' + month + ' ' + year,
-                    files: [file]
-                }).catch(function(err) {
-                    if (err.name !== 'AbortError') doc.save(filename);
-                });
-                return;
-            }
-        }
+        // Guardar el PDF en base64 en localStorage
+        // y abrir la pagina puente en Chrome para compartirlo
+        try {
+            var base64data = doc.output('datauristring');
+            localStorage.setItem('pendingPDF', base64data);
+            localStorage.setItem('pendingPDFname', filename);
 
-        // Fallback: descarga
-        doc.save(filename);
+            // Abrir pagina puente en navegador externo (Chrome)
+            // Desde Chrome si funciona Web Share y descargas
+            var bridgeUrl = window.location.href.replace('index.html', '').replace(/\/$/, '') + '/share.html';
+            window.open(bridgeUrl, '_system');
+        } catch(e) {
+            // Si localStorage falla (PDF muy grande), usar doc.save como ultimo recurso
+            doc.save(filename);
+        }
     }
 
     window.onload = init;
