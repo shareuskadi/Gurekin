@@ -275,14 +275,7 @@ function descargar() {
 }
 
 function volverApp() {
-    // Intentar cerrar esta pestaña (funciona si fue abierta por window.open)
-    window.close();
-    // Si no se cierra (Chrome bloquea window.close en pestañas abiertas por el usuario),
-    // navegar de vuelta al index despues de un momento
-    setTimeout(function() {
-        var appUrl = window.location.href.split('/share.html')[0] + '/';
-        window.location.href = appUrl;
-    }, 300);
+    history.back();
 }
 
 window.onload = function() {

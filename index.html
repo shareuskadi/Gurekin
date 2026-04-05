@@ -962,7 +962,7 @@
         var fname   = 'backup_gurekin_' + dateStr + '.json';
         var encoded = btoa(unescape(encodeURIComponent(JSON.stringify({filename:fname, content:all}))));
         var base    = window.location.href.split('/').slice(0,-1).join('/');
-        window.open(base + '/share.html?type=backup&d=' + encoded, '_blank');
+        window.location.href = base + '/share.html?type=backup&d=' + encoded;
     }
 
     function restoreBackup() {
@@ -1202,7 +1202,7 @@
         var base     = window.location.href.split('/').slice(0,-1).join('/');
         var shareUrl = base + '/share.html?d=' + encoded;
 
-        window.open(shareUrl, '_blank');
+        window.location.href = shareUrl;
     }
 
     window.onload = init;
