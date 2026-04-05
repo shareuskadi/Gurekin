@@ -33,7 +33,7 @@ button { width: 100%; padding: 14px; border: none; border-radius: 10px; font-siz
         <button class="btn-share"    id="btn-share"    onclick="compartir()">&#8599; Compartir (WhatsApp, email...)</button>
         <button class="btn-download" id="btn-download" onclick="descargar()">&#8595; Guardar en el movil</button>
     </div>
-    <button class="btn-back" onclick="history.back()">&#8592; Volver a la app</button>
+    <button class="btn-back" onclick="volverApp()">&#8592; Volver a la app</button>
     <div class="error" id="error" style="display:none"></div>
 </div>
 <script>
@@ -272,6 +272,17 @@ function descargar() {
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         setTimeout(function(){URL.revokeObjectURL(url);}, 5000);
     } catch(e) { showError('Error: ' + e.message); }
+}
+
+function volverApp() {
+    // Intentar cerrar esta pestaña (funciona si fue abierta por window.open)
+    window.close();
+    // Si no se cierra (Chrome bloquea window.close en pestañas abiertas por el usuario),
+    // navegar de vuelta al index despues de un momento
+    setTimeout(function() {
+        var appUrl = window.location.href.split('/share.html')[0] + '/';
+        window.location.href = appUrl;
+    }, 300);
 }
 
 window.onload = function() {
