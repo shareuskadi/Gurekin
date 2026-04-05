@@ -957,12 +957,12 @@
                 all[k] = localStorage.getItem(k);
             }
         }
-        var blob = new Blob([JSON.stringify(all, null, 2)], {type:'application/json'});
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        var today = new Date();
-        a.download = 'backup_horas_' + today.getFullYear() + '-' + (today.getMonth()+1) + '-' + today.getDate() + '.json';
-        a.click();
+        var today   = new Date();
+        var dateStr = today.getFullYear() + '-' + (today.getMonth()+1) + '-' + today.getDate();
+        var fname   = 'backup_gurekin_' + dateStr + '.json';
+        var encoded = btoa(unescape(encodeURIComponent(JSON.stringify({filename:fname, content:all}))));
+        var base    = window.location.href.split('/').slice(0,-1).join('/');
+        window.open(base + '/share.html?type=backup&d=' + encoded, '_blank');
     }
 
     function restoreBackup() {
