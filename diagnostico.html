@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnóstico</title>
+<style>
+body { font-family: sans-serif; padding: 20px; background: #f0f4ff; }
+.box { background: white; border-radius: 10px; padding: 15px; margin: 10px 0; font-size: 14px; }
+.ok  { border-left: 4px solid #10b981; }
+.err { border-left: 4px solid #ef4444; }
+.warn{ border-left: 4px solid #f59e0b; }
+</style>
+</head>
+<body>
+<h2>🔍 Diagnóstico Gurekin</h2>
+
+<div id="results"></div>
+
+<script>
+const R = document.getElementById('results');
+
+function check(label, ok, detail) {
+    const d = document.createElement('div');
+    d.className = 'box ' + (ok ? 'ok' : 'err');
+    d.innerHTML = (ok ? '✅ ' : '❌ ') + '<b>' + label + '</b>' + (detail ? '<br><small>' + detail + '</small>' : '');
+    R.appendChild(d);
+}
+
+function warn(label, detail) {
+    const d = document.createElement('div');
+    d.className = 'box warn';
+    d.innerHTML = '⚠️ <b>' + label + '</b>' + (detail ? '<br><small>' + detail + '</small>' : '');
+    R.appendChild(d);
+}
+
+// 1. JavaScript funciona
+check('JavaScript activo', true, 'Si ves esto, JS funciona');
+
+// 2. User Agent
+warn('User Agent', navigator.userAgent);
+
+// 3. localStorage
+try {
+    localStorage.setItem('test', '1');
+    localStorage.removeItem('test');
+    check('localStorage disponible', true);
+} catch(e) {
+    check('localStorage disponible', false, e.message);
+}
+
+// 4. navigator.onLine
+check('Conexion a internet', navigator.onLine, navigator.onLine ? 'Online' : 'Sin conexion');
+
+// 5. Web Share API
+check('Web Share API', !!navigator.share, navigator.share ? 'Disponible' : 'No disponible');
+check('Web Share con ficheros', !!(navigator.canShare), navigator.canShare ? 'Disponible' : 'No disponible');
+
+// 6. Blob support
+try {
+    const b = new Blob(['test'], {type:'text/plain'});
+    const u = URL.createObjectURL(b);
+    URL.revokeObjectURL(u);
+    check('Blob + createObjectURL', true, u.substring(0,30)+'...');
+} catch(e) {
+    check('Blob + createObjectURL', false, e.message);
+}
+
+// 7. Cargar jsPDF
+const s = document.createElement('script');
+s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+s.onload = () => check('jsPDF cargado desde CDN', true);
+s.onerror = () => check('jsPDF cargado desde CDN', false, 'No se pudo cargar. Sin conexion o bloqueado.');
+document.head.appendChild(s);
+
+// 8. window.open
+try {
+    check('window.open disponible', typeof window.open === 'function');
+} catch(e) {
+    check('window.open disponible', false, e.message);
+}
+</script>
+</body>
+</html>
