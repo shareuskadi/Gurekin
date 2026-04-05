@@ -4,106 +4,341 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Compartir PDF - Gurekin</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
-body { font-family: sans-serif; background: #f0f4ff; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
-.card { background: white; border-radius: 16px; padding: 32px 24px; text-align: center; max-width: 360px; width: 100%; box-shadow: 0 8px 32px rgba(37,99,235,0.12); }
-.icon { font-size: 48px; margin-bottom: 16px; }
-h2 { color: #1d4ed8; margin: 0 0 8px; font-size: 1.3rem; }
-p  { color: #64748b; margin: 0 0 24px; font-size: 0.9rem; }
-button { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; margin: 6px 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: sans-serif; background: #f0f4ff; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+.card { background: white; border-radius: 16px; padding: 32px 24px; text-align: center; max-width: 380px; width: 100%; box-shadow: 0 8px 32px rgba(37,99,235,0.12); }
+.icon { font-size: 52px; margin-bottom: 12px; }
+h2 { color: #1d4ed8; margin: 0 0 6px; font-size: 1.25rem; }
+.subtitle { color: #64748b; font-size: 0.85rem; margin-bottom: 20px; }
+.filename { font-weight: 600; color: #0f172a; font-size: 0.82rem; background: #f1f5f9; padding: 8px 12px; border-radius: 8px; margin-bottom: 22px; word-break: break-all; }
+button { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; margin: 5px 0; }
 .btn-share    { background: #2563eb; color: white; }
 .btn-download { background: #10b981; color: white; }
-.btn-back     { background: #f1f5f9; color: #475569; }
-.error { color: #ef4444; font-size: 0.85rem; margin-top: 12px; }
-#filename { font-weight: 600; color: #0f172a; word-break: break-all; font-size: 0.85rem; background: #f1f5f9; padding: 8px 12px; border-radius: 8px; margin-bottom: 20px; }
+.btn-back     { background: #f1f5f9; color: #475569; margin-top: 8px; }
+.error { color: #ef4444; font-size: 0.83rem; margin-top: 14px; padding: 10px; background: #fef2f2; border-radius: 8px; }
+.loading { color: #64748b; font-size: 0.9rem; margin: 16px 0; }
 </style>
 </head>
 <body>
 <div class="card">
     <div class="icon">📄</div>
-    <h2>PDF listo</h2>
-    <div id="filename">cargando...</div>
-    <button class="btn-share" onclick="compartir()">↗ Compartir por WhatsApp, email...</button>
-    <button class="btn-download" onclick="descargar()">⬇ Guardar en el movil</button>
-    <button class="btn-back" onclick="window.close()">← Volver a la app</button>
-    <div class="error" id="error"></div>
+    <h2>PDF listo para compartir</h2>
+    <div class="subtitle">Elige como quieres enviarlo</div>
+    <div class="filename" id="filename">Generando PDF...</div>
+    <div class="loading" id="loading">Espera un momento...</div>
+    <div id="buttons" style="display:none">
+        <button class="btn-share"    onclick="compartir()">&#8599; Compartir (WhatsApp, email...)</button>
+        <button class="btn-download" onclick="descargar()">&#8595; Guardar en el movil</button>
+    </div>
+    <button class="btn-back" onclick="history.back()">&#8592; Volver a la app</button>
+    <div class="error" id="error" style="display:none"></div>
 </div>
-
 <script>
-var base64data = null;
-var filename   = 'reporte.pdf';
+var MONTHS   = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+var DAYS_LBL = ["Lun","Mar","Mie","Jue","Vie","Sab","Dom"];
 
-function init() {
-    try {
-        base64data = localStorage.getItem('pendingPDF');
-        filename   = localStorage.getItem('pendingPDFname') || 'reporte.pdf';
+var pdfBlob  = null;
+var filename = 'reporte.pdf';
 
-        if (!base64data) {
-            document.getElementById('error').textContent = 'No se encontro el PDF. Vuelve a la app y pulsa Compartir PDF de nuevo.';
-            return;
-        }
-
-        document.getElementById('filename').textContent = filename;
-
-        // Limpiar despues de leer
-        localStorage.removeItem('pendingPDF');
-        localStorage.removeItem('pendingPDFname');
-
-    } catch(e) {
-        document.getElementById('error').textContent = 'Error al cargar el PDF: ' + e.message;
-    }
+function showError(msg) {
+    var el = document.getElementById('error');
+    el.textContent = msg;
+    el.style.display = 'block';
+    document.getElementById('loading').style.display = 'none';
 }
 
-function dataURItoBlob(dataURI) {
-    var byteString = atob(dataURI.split(',')[1]);
-    var ab = new ArrayBuffer(byteString.length);
-    var ia = new Uint8Array(ab);
-    for (var i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
+function formatMins(m) {
+    var h = Math.floor(m / 60);
+    var mins = m % 60;
+    return h + 'h' + (mins > 0 ? ' ' + mins + 'm' : '');
+}
+
+function calcDay(slots) {
+    var mins = 0;
+    for (var i = 0; i < slots.length; i++) {
+        var s = slots[i];
+        if (s.start && s.end) {
+            var p1 = s.start.split(':'), p2 = s.end.split(':');
+            var diff = (parseInt(p2[0])*60+parseInt(p2[1])) - (parseInt(p1[0])*60+parseInt(p1[1]));
+            if (diff < 0) diff += 1440;
+            mins += diff;
+        }
     }
-    return new Blob([ab], {type: 'application/pdf'});
+    return mins;
+}
+
+function buildPDF(payload) {
+    var jsPDF         = window.jspdf.jsPDF;
+    var name          = payload.name || 'Trabajador';
+    var monthIdx      = parseInt(payload.month);
+    var year          = parseInt(payload.year);
+    var contractHours = parseFloat(payload.hours) || 40;
+    var currentData   = payload.data || {};
+    var monthName     = MONTHS[monthIdx];
+    var daysInMonth   = new Date(year, monthIdx + 1, 0).getDate();
+
+    var doc    = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
+    var W      = doc.internal.pageSize.getWidth();
+    var H      = doc.internal.pageSize.getHeight();
+    var margin = 14;
+
+    var PRIMARY  = [29,78,216];
+    var PL       = [59,130,246];
+    var SUCCESS  = [16,185,129];
+    var ACCENT   = [245,158,11];
+    var DANGER   = [220,38,38];
+    var GREY     = [100,116,139];
+    var LIGHTBG  = [241,245,249];
+    var BORDER   = [226,232,240];
+    var TEXT     = [15,23,42];
+
+    // Header
+    doc.setFillColor(PRIMARY[0],PRIMARY[1],PRIMARY[2]);
+    doc.roundedRect(margin, 10, W-margin*2, 28, 4, 4, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(16);
+    doc.text('Control de Horas Laborales', margin+6, 21);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9);
+    doc.setTextColor(200,215,255);
+    doc.text('Registro de jornada y horas extraordinarias', margin+6, 27);
+    doc.setFillColor(255,255,255);
+    doc.roundedRect(W-margin-44, 14, 42, 12, 3, 3, 'F');
+    doc.setTextColor(PRIMARY[0],PRIMARY[1],PRIMARY[2]);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9);
+    doc.text(monthName + ' ' + year, W-margin-23, 21.5, {align:'center'});
+
+    // Worker info
+    var y = 46;
+    doc.setFillColor(LIGHTBG[0],LIGHTBG[1],LIGHTBG[2]);
+    doc.roundedRect(margin, y, W-margin*2, 14, 3, 3, 'F');
+    doc.setTextColor(GREY[0],GREY[1],GREY[2]);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8);
+    doc.text('TRABAJADOR', margin+5, y+5.5);
+    doc.text('JORNADA SEMANAL', margin+90, y+5.5);
+    doc.setTextColor(TEXT[0],TEXT[1],TEXT[2]);
+    doc.setFont('helvetica','bold'); doc.setFontSize(10);
+    doc.text(name, margin+5, y+11);
+    doc.text(contractHours + 'h / semana', margin+90, y+11);
+
+    // Calcular resumen
+    var workDays = 0;
+    for (var d = 1; d <= daysInMonth; d++) {
+        var dow = new Date(year, monthIdx, d).getDay();
+        var isWknd = (dow === 0 || dow === 6);
+        var dData  = currentData[d] || null;
+        var isHol  = !isWknd && dData && dData.isHoliday;
+        if (!isWknd && !isHol) workDays++;
+    }
+    var dailyMins  = (contractHours / 5) * 60;
+    var targetMins = workDays * dailyMins;
+    var totalMins  = 0;
+    var workedDays = 0;
+    var dayMinsMap = {};
+    for (var d2 = 1; d2 <= daysInMonth; d2++) {
+        var dd = currentData[d2] || null;
+        var dm = dd && dd.slots ? calcDay(dd.slots) : 0;
+        dayMinsMap[d2] = dm;
+        if (dm > 0) workedDays++;
+        totalMins += dm;
+    }
+    var normalMins = Math.min(totalMins, targetMins);
+    var extraMins  = Math.max(0, totalMins - targetMins);
+    var pct        = targetMins > 0 ? Math.min(1, normalMins / targetMins) : 0;
+
+    // Summary cards
+    y += 20;
+    doc.setTextColor(PRIMARY[0],PRIMARY[1],PRIMARY[2]);
+    doc.setFont('helvetica','bold'); doc.setFontSize(9);
+    doc.text('RESUMEN DEL MES', margin, y);
+    doc.setDrawColor(PL[0],PL[1],PL[2]); doc.setLineWidth(0.4);
+    doc.line(margin, y+1.5, W-margin, y+1.5);
+    y += 6;
+
+    var cardW = (W-margin*2-10)/3;
+    var cards = [
+        {label:'Dias Laborables', value:String(workDays),              color:GREY},
+        {label:'Objetivo Mensual',value:formatMins(targetMins),        color:PRIMARY},
+        {label:'Dias Trabajados', value:String(workedDays),            color:[124,58,237]},
+        {label:'Horas Normales',  value:formatMins(normalMins),        color:SUCCESS},
+        {label:'Horas Extras',    value:formatMins(extraMins),         color:ACCENT},
+        {label:'Total Mensual',   value:formatMins(totalMins),         color:DANGER}
+    ];
+    for (var ci = 0; ci < cards.length; ci++) {
+        var card = cards[ci];
+        var col  = ci % 3;
+        var row  = Math.floor(ci/3);
+        var cx   = margin + col*(cardW+5);
+        var cy   = y + row*22;
+        doc.setFillColor(LIGHTBG[0],LIGHTBG[1],LIGHTBG[2]);
+        doc.roundedRect(cx, cy, cardW, 18, 3, 3, 'F');
+        doc.setFillColor(card.color[0],card.color[1],card.color[2]);
+        doc.roundedRect(cx, cy, cardW, 2, 1, 1, 'F');
+        doc.setTextColor(GREY[0],GREY[1],GREY[2]);
+        doc.setFont('helvetica','normal'); doc.setFontSize(7);
+        doc.text(card.label.toUpperCase(), cx+cardW/2, cy+8, {align:'center'});
+        doc.setTextColor(card.color[0],card.color[1],card.color[2]);
+        doc.setFont('helvetica','bold'); doc.setFontSize(12);
+        doc.text(card.value, cx+cardW/2, cy+15, {align:'center'});
+    }
+
+    // Progress bar
+    y += 50;
+    doc.setTextColor(GREY[0],GREY[1],GREY[2]);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+    doc.text('PROGRESO HACIA EL OBJETIVO', margin, y);
+    doc.text(Math.round(pct*100) + '%', W-margin, y, {align:'right'});
+    y += 3;
+    doc.setFillColor(BORDER[0],BORDER[1],BORDER[2]);
+    doc.roundedRect(margin, y, W-margin*2, 4, 2, 2, 'F');
+    if (pct > 0) {
+        doc.setFillColor(SUCCESS[0],SUCCESS[1],SUCCESS[2]);
+        doc.roundedRect(margin, y, (W-margin*2)*pct, 4, 2, 2, 'F');
+    }
+
+    // Daily table
+    y += 10;
+    doc.setTextColor(PRIMARY[0],PRIMARY[1],PRIMARY[2]);
+    doc.setFont('helvetica','bold'); doc.setFontSize(9);
+    doc.text('DETALLE DIARIO', margin, y);
+    doc.setDrawColor(PL[0],PL[1],PL[2]); doc.setLineWidth(0.4);
+    doc.line(margin, y+1.5, W-margin, y+1.5);
+    y += 5;
+
+    var rows = [];
+    for (var dd2 = 1; dd2 <= daysInMonth; dd2++) {
+        var date2  = new Date(year, monthIdx, dd2);
+        var dow2   = date2.getDay();
+        var isWk   = (dow2===0||dow2===6);
+        var dD     = currentData[dd2] || null;
+        var isH    = !isWk && dD && dD.isHoliday;
+        var dN     = DAYS_LBL[(dow2+6)%7];
+        var dM     = dayMinsMap[dd2] || 0;
+        var sl     = (dD && dD.slots) ? dD.slots : [];
+        var tramos = [];
+        for (var ti = 0; ti < sl.length; ti++) {
+            if (sl[ti].start && sl[ti].end) {
+                tramos.push(sl[ti].start + '->' + sl[ti].end + (sl[ti].note ? ' ('+sl[ti].note+')' : ''));
+            }
+        }
+        var tipo = isWk ? 'Fin semana' : (isH ? 'Festivo' : 'Laborable');
+        rows.push([dd2, dN, tipo, tramos.join(' | ') || (isH?'Festivo':'-'), dM>0?formatMins(dM):'-', isWk, isH, dM>0]);
+    }
+
+    doc.autoTable({
+        startY: y,
+        margin: {left:margin, right:margin},
+        head: [['Dia','','Tipo','Tramos horarios','Total']],
+        body: rows.map(function(r){return[r[0],r[1],r[2],r[3],r[4]];}),
+        headStyles: {fillColor:PRIMARY, textColor:[255,255,255], fontStyle:'bold', fontSize:8, cellPadding:3},
+        bodyStyles: {fontSize:7.5, cellPadding:2.5, textColor:TEXT},
+        columnStyles: {
+            0:{cellWidth:10,halign:'center',fontStyle:'bold'},
+            1:{cellWidth:14},
+            2:{cellWidth:22},
+            3:{cellWidth:'auto'},
+            4:{cellWidth:18,halign:'center',fontStyle:'bold'}
+        },
+        alternateRowStyles: {fillColor:[248,250,252]},
+        didParseCell: function(data) {
+            if (data.section==='body') {
+                var r = rows[data.row.index];
+                if (r[5]) { data.cell.styles.textColor=[148,163,184]; data.cell.styles.fillColor=[248,250,252]; }
+                else if (r[6]) { data.cell.styles.fillColor=[255,251,235]; data.cell.styles.textColor=[180,120,0]; }
+                else if (r[7] && data.column.index===4) { data.cell.styles.textColor=SUCCESS; }
+            }
+        }
+    });
+
+    // Footer
+    var pageCount = doc.internal.getNumberOfPages();
+    var today = new Date();
+    var dateStr = today.getDate()+'/'+(today.getMonth()+1)+'/'+today.getFullYear();
+    for (var p = 1; p <= pageCount; p++) {
+        doc.setPage(p);
+        doc.setFontSize(7); doc.setTextColor(GREY[0],GREY[1],GREY[2]);
+        doc.setFont('helvetica','normal');
+        doc.text('Generado el '+dateStr+'  -  Pagina '+p+' de '+pageCount, W/2, H-8, {align:'center'});
+        doc.setDrawColor(BORDER[0],BORDER[1],BORDER[2]); doc.setLineWidth(0.3);
+        doc.line(margin, H-11, W-margin, H-11);
+    }
+
+    return doc;
+}
+
+function init() {
+    var params = new URLSearchParams(window.location.search);
+    var encoded = params.get('d');
+    if (!encoded) {
+        showError('No se recibieron datos. Vuelve a la app y pulsa Compartir PDF de nuevo.');
+        return;
+    }
+
+    try {
+        var json    = decodeURIComponent(escape(atob(encoded)));
+        var payload = JSON.parse(json);
+        var month   = MONTHS[parseInt(payload.month)];
+        var year    = payload.year;
+        var name    = payload.name;
+        filename    = 'horas_' + name.replace(/\s+/g,'_') + '_' + month + '_' + year + '.pdf';
+        document.getElementById('filename').textContent = filename;
+    } catch(e) {
+        showError('Error al leer los datos: ' + e.message);
+        return;
+    }
+
+    // Esperar a que jsPDF cargue
+    var tries = 0;
+    var interval = setInterval(function() {
+        tries++;
+        if (window.jspdf && window.jspdf.jsPDF) {
+            clearInterval(interval);
+            try {
+                var payload2 = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+                var doc = buildPDF(payload2);
+                pdfBlob = doc.output('blob');
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('buttons').style.display = 'block';
+            } catch(e2) {
+                showError('Error al generar el PDF: ' + e2.message);
+            }
+        } else if (tries > 50) {
+            clearInterval(interval);
+            showError('No se pudo cargar el generador de PDF. Comprueba la conexion a internet.');
+        }
+    }, 100);
 }
 
 function compartir() {
-    if (!base64data) { document.getElementById('error').textContent = 'No hay PDF disponible. Vuelve a la app.'; return; }
+    if (!pdfBlob) { showError('PDF no disponible. Recarga la pagina.'); return; }
     try {
-        var blob = dataURItoBlob(base64data);
-        var file = new File([blob], filename, {type: 'application/pdf'});
-
+        var file = new File([pdfBlob], filename, {type:'application/pdf'});
         if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
-            navigator.share({
-                title: filename,
-                files: [file]
-            }).catch(function(e) {
-                if (e.name !== 'AbortError') descargar();
-            });
-        } else if (navigator.share) {
-            // Compartir sin fichero adjunto no tiene sentido para un PDF
-            descargar();
+            navigator.share({title: filename, files:[file]})
+                .catch(function(e) { if (e.name !== 'AbortError') descargar(); });
         } else {
             descargar();
         }
-    } catch(e) {
-        document.getElementById('error').textContent = 'Error: ' + e.message;
-        descargar();
-    }
+    } catch(e) { descargar(); }
 }
 
 function descargar() {
-    if (!base64data) { document.getElementById('error').textContent = 'No hay PDF disponible. Vuelve a la app.'; return; }
+    if (!pdfBlob) { showError('PDF no disponible. Recarga la pagina.'); return; }
     try {
-        var blob    = dataURItoBlob(base64data);
-        var blobUrl = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href     = blobUrl;
-        a.download = filename;
+        var url = URL.createObjectURL(pdfBlob);
+        var a   = document.createElement('a');
+        a.href  = url; a.download = filename;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 5000);
+        setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
     } catch(e) {
-        // Ultimo recurso: abrir data URI directamente
-        window.open(base64data, '_blank');
+        showError('Error al descargar: ' + e.message);
     }
 }
 
