@@ -547,7 +547,7 @@
     <header>
         <div class="header-left">
             <h1>⏱Control de Horas</h1>
-            <p>Registro de jornada y horas extraordinarias</p>
+            <p>Versión 4.26 @Asier Casado 2026</p>
         </div>
         <div class="header-badge" id="header-month-label">—</div>
     </header>
@@ -572,7 +572,7 @@
             <span id="autosave-indicator">✓ Guardado</span>
             <button class="btn-backup"  onclick="exportBackup()">⬇ Backup</button>
             <button class="btn-restore" onclick="restoreBackup()">⬆ Restaurar</button>
-            <button class="btn-pdf"     onclick="sharePDF()">↗ Compartir PDF</button>
+            <button class="btn-pdf"     onclick="sharePDF()">↗ Compartir mes</button>
             <button class="btn-save"    onclick="saveData(true)">💾 Guardar</button>
         </div>
     </div>
@@ -602,7 +602,7 @@
                 <div class="summary-progress"><div class="summary-progress-bar" id="progress-normal" style="width:0%"></div></div>
             </div>
             <div class="summary-card card-extra">
-                <div class="summary-label">Horas Extras</div>
+                <div class="summary-label">Horas complementarias</div>
                 <div class="summary-value" id="stat-extra">0h</div>
             </div>
             <div class="summary-card card-total">
@@ -743,7 +743,7 @@
             var addBtn = document.createElement('button');
             addBtn.className = 'btn-add';
             addBtn.setAttribute('onclick', 'addSlot(' + d + ')');
-            addBtn.textContent = '+ Añadir tramo';
+            addBtn.textContent = '+ Añadir tramo horario';
             dayEl.appendChild(addBtn);
 
             calendar.appendChild(dayEl);
@@ -1027,7 +1027,7 @@
         doc.setFont('helvetica','normal');
         doc.setFontSize(9);
         doc.setTextColor(200,215,255);
-        doc.text('Registro de jornada y horas extraordinarias', margin+6, 27);
+        doc.text('Registro de jornada y horas complementarias', margin+6, 27);
         doc.setFillColor(255,255,255);
         doc.roundedRect(W-margin-44, 14, 42, 12, 3, 3, 'F');
         doc.setTextColor(PRIMARY[0],PRIMARY[1],PRIMARY[2]);
@@ -1067,7 +1067,7 @@
             {label:'Objetivo Mensual', value:document.getElementById('stat-target').textContent,  color:PRIMARY},
             {label:'Dias Trabajados',  value:document.getElementById('stat-days').textContent,    color:[124,58,237]},
             {label:'Horas Normales',   value:document.getElementById('stat-normal').textContent,  color:SUCCESS},
-            {label:'Horas Extras',     value:document.getElementById('stat-extra').textContent,   color:ACCENT},
+            {label:'Horas Complementarias',     value:document.getElementById('stat-extra').textContent,   color:ACCENT},
             {label:'Total Mensual',    value:document.getElementById('stat-total').textContent,   color:DANGER}
         ];
         for (var ci = 0; ci < cards.length; ci++) {
