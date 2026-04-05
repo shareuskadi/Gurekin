@@ -1189,28 +1189,20 @@
             alert('El generador de PDF no esta disponible. Comprueba la conexion a internet e intentalo de nuevo.');
             return;
         }
-        var result   = buildPDFDoc();
-        var doc      = result.doc;
-        var name     = result.name;
-        var month    = result.monthName;
-        var year     = result.year;
-        var filename = 'horas_' + name.replace(/\s+/g,'_') + '_' + month + '_' + year + '.pdf';
 
-        // Guardar el PDF en base64 en localStorage
-        // y abrir la pagina puente en Chrome para compartirlo
-        try {
-            var base64data = doc.output('datauristring');
-            localStorage.setItem('pendingPDF', base64data);
-            localStorage.setItem('pendingPDFname', filename);
+        var payload = {
+            name:  document.getElementById('worker-name').value || 'Trabajador',
+            hours: document.getElementById('contract-hours').value || 40,
+            month: document.getElementById('month-select').value,
+            year:  document.getElementById('year-input').value,
+            data:  currentData
+        };
 
-            // Abrir pagina puente en navegador externo (Chrome)
-            // Desde Chrome si funciona Web Share y descargas
-            var bridgeUrl = window.location.href.replace('index.html', '').replace(/\/$/, '') + '/share.html';
-            window.open(bridgeUrl, '_system');
-        } catch(e) {
-            // Si localStorage falla (PDF muy grande), usar doc.save como ultimo recurso
-            doc.save(filename);
-        }
+        var encoded  = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+        var base     = window.location.href.split('/').slice(0,-1).join('/');
+        var shareUrl = base + '/share.html?d=' + encoded;
+
+        window.open(shareUrl, '_blank');
     }
 
     window.onload = init;
