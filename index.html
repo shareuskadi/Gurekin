@@ -962,7 +962,16 @@
         var fname   = 'backup_gurekin_' + dateStr + '.json';
         var encoded = btoa(unescape(encodeURIComponent(JSON.stringify({filename:fname, content:all}))));
         var base    = window.location.href.split('/').slice(0,-1).join('/');
-        window.open(base + '/share.html?type=backup&d=' + encoded, '_blank');
+        // Para exportar PDF o backup
+function abrirShare(tipo, datos) {
+    var url = 'share.html?type=' + tipo + '&d=' + datos;
+    
+    // Guardar la URL actual en sessionStorage para volver
+    sessionStorage.setItem('appUrl', window.location.href);
+    
+    // Navegar directamente (NO window.open)
+    window.location.href = url;
+}
     }
 
     function restoreBackup() {
