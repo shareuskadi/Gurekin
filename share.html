@@ -10,17 +10,17 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: sans-serif; background: #f0f4ff; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
 .card { background: white; border-radius: 16px; padding: 32px 24px; text-align: center; max-width: 380px; width: 100%; box-shadow: 0 8px 32px rgba(37,99,235,0.12); }
-.icon { font-size: 52px; margin-bottom: 12px; }
-h2 { color: #1d4ed8; margin: 0 0 6px; font-size: 1.25rem; }
-.subtitle { color: #64748b; font-size: 0.85rem; margin-bottom: 20px; }
-.filename { font-weight: 600; color: #0f172a; font-size: 0.82rem; background: #f1f5f9; padding: 8px 12px; border-radius: 8px; margin-bottom: 22px; word-break: break-all; }
-button { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; margin: 5px 0; }
+.icon    { font-size: 52px; margin-bottom: 12px; }
+h2       { color: #1d4ed8; margin: 0 0 6px; font-size: 1.25rem; }
+.subtitle{ color: #64748b; font-size: 0.85rem; margin-bottom: 20px; }
+.fname   { font-weight: 600; color: #0f172a; font-size: 0.82rem; background: #f1f5f9; padding: 8px 12px; border-radius: 8px; margin-bottom: 22px; word-break: break-all; }
+.loading { color: #64748b; font-size: 0.9rem; margin: 16px 0; }
+button   { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; margin: 5px 0; }
 .btn-share    { background: #2563eb; color: white; }
 .btn-download { background: #10b981; color: white; }
-.btn-back  { background: #f1f5f9; color: #475569; margin-top: 8px; }
-.back-hint { color: #94a3b8; font-size: 0.82rem; margin-top: 18px; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px dashed #e2e8f0; }
-.error  { color: #ef4444; font-size: 0.83rem; margin-top: 14px; padding: 10px; background: #fef2f2; border-radius: 8px; }
-.loading { color: #64748b; font-size: 0.9rem; margin: 16px 0; }
+.back-hint    { margin-top: 18px; color: #94a3b8; font-size: 0.82rem; padding: 10px 12px; background: #f8fafc; border-radius: 8px; border: 1px dashed #e2e8f0; line-height: 1.5; }
+.back-hint b  { color: #475569; }
+.error  { color: #ef4444; font-size: 0.83rem; margin-top: 14px; padding: 10px; background: #fef2f2; border-radius: 8px; display:none; }
 </style>
 </head>
 <body>
@@ -28,35 +28,30 @@ button { width: 100%; padding: 14px; border: none; border-radius: 10px; font-siz
     <div class="icon" id="icon">&#128196;</div>
     <h2 id="title">Archivo listo</h2>
     <div class="subtitle" id="subtitle">Elige como quieres guardarlo</div>
-    <div class="filename" id="filename">Generando...</div>
+    <div class="fname" id="fname">Generando...</div>
     <div class="loading" id="loading">Espera un momento...</div>
     <div id="buttons" style="display:none">
-        <button class="btn-share"    id="btn-share"    onclick="compartir()">&#8599; Compartir (WhatsApp, email...)</button>
-        <button class="btn-download" id="btn-download" onclick="descargar()">&#8595; Guardar en el movil</button>
+        <button class="btn-share"    onclick="compartir()">&#8599; Compartir (WhatsApp, email...)</button>
+        <button class="btn-download" onclick="descargar()">&#8595; Guardar en el movil</button>
     </div>
-    <button class="btn-back" onclick="volverApp()">&#8592; Volver a la app</button>
-    <div class="error" id="error" style="display:none"></div>
+    <div class="back-hint">&#8592; Pulsa la flecha <b>Atras</b> del movil para volver a la app</div>
+    <div class="error" id="error"></div>
 </div>
 <script>
 var MONTHS   = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 var DAYS_LBL = ["Lun","Mar","Mie","Jue","Vie","Sab","Dom"];
-
 var fileBlob = null;
 var filename = 'archivo';
-var fileType = 'pdf';
 
 function showError(msg) {
     var el = document.getElementById('error');
-    el.textContent = msg;
-    el.style.display = 'block';
+    el.textContent = msg; el.style.display = 'block';
     document.getElementById('loading').style.display = 'none';
 }
 
-function ready(blob, fname, type) {
-    fileBlob = blob;
-    filename = fname;
-    fileType = type;
-    document.getElementById('filename').textContent = fname;
+function ready(blob, fname) {
+    fileBlob = blob; filename = fname;
+    document.getElementById('fname').textContent    = fname;
     document.getElementById('loading').style.display = 'none';
     document.getElementById('buttons').style.display = 'block';
 }
@@ -81,47 +76,26 @@ function calcDay(slots) {
 }
 
 function initBackup(encoded) {
-    document.getElementById('icon').textContent = '\uD83D\uDCBE';
-    document.getElementById('title').textContent = 'Backup listo';
-    document.getElementById('subtitle').textContent = 'Guarda tu copia de seguridad';
+    document.getElementById('icon').textContent     = '\uD83D\uDCBE';
+    document.getElementById('title').textContent    = 'Backup listo';
+    document.getElementById('subtitle').textContent = 'Guarda o comparte tu copia de seguridad';
     try {
         var payload = JSON.parse(decodeURIComponent(escape(atob(encoded))));
-        var fname   = payload.filename;
-        var content = JSON.stringify(payload.content, null, 2);
-        var blob    = new Blob([content], {type:'application/json'});
-        
-        // Preparar archivo
-        fileBlob = blob;
-        filename = fname;
-        fileType = 'json';
-        
-        document.getElementById('filename').textContent = fname;
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('buttons').style.display = 'block';
-        
-        // OCULTAR botón compartir para backups (solo descarga local)
-        document.getElementById('btn-share').style.display = 'none';
-        
-    } catch(e) {
-        showError('Error al leer el backup: ' + e.message);
-    }
+        var blob    = new Blob([JSON.stringify(payload.content, null, 2)], {type:'application/json'});
+        ready(blob, payload.filename);
+    } catch(e) { showError('Error: ' + e.message); }
 }
 
 function initPDF(encoded) {
-    document.getElementById('icon').textContent = '\uD83D\uDCC4';
-    document.getElementById('title').textContent = 'PDF listo para compartir';
+    document.getElementById('icon').textContent     = '\uD83D\uDCC4';
+    document.getElementById('title').textContent    = 'PDF listo para compartir';
     document.getElementById('subtitle').textContent = 'Elige como quieres enviarlo';
-
     var payload;
     try {
-        payload = JSON.parse(decodeURIComponent(escape(atob(encoded))));
-        var month = MONTHS[parseInt(payload.month)];
-        filename  = 'horas_' + payload.name.replace(/\s+/g,'_') + '_' + month + '_' + payload.year + '.pdf';
-        document.getElementById('filename').textContent = filename;
-    } catch(e) {
-        showError('Error al leer los datos: ' + e.message);
-        return;
-    }
+        payload  = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+        filename = 'horas_' + payload.name.replace(/\s+/g,'_') + '_' + MONTHS[parseInt(payload.month)] + '_' + payload.year + '.pdf';
+        document.getElementById('fname').textContent = filename;
+    } catch(e) { showError('Error al leer los datos: ' + e.message); return; }
 
     var tries = 0;
     var interval = setInterval(function() {
@@ -130,82 +104,68 @@ function initPDF(encoded) {
             clearInterval(interval);
             try {
                 var doc  = buildPDF(payload);
-                var blob = doc.output('blob');
-                ready(blob, filename, 'pdf');
-            } catch(e2) {
-                showError('Error al generar el PDF: ' + e2.message);
-            }
+                ready(doc.output('blob'), filename);
+            } catch(e) { showError('Error al generar PDF: ' + e.message); }
         } else if (tries > 60) {
             clearInterval(interval);
-            showError('No se pudo cargar jsPDF. Comprueba la conexion a internet.');
+            showError('No se pudo cargar jsPDF. Comprueba la conexion.');
         }
     }, 100);
 }
 
 function buildPDF(payload) {
-    var jsPDF         = window.jspdf.jsPDF;
-    var name          = payload.name || 'Trabajador';
-    var monthIdx      = parseInt(payload.month);
-    var year          = parseInt(payload.year);
-    var contractHours = parseFloat(payload.hours) || 40;
-    var currentData   = payload.data || {};
-    var monthName     = MONTHS[monthIdx];
-    var daysInMonth   = new Date(year, monthIdx+1, 0).getDate();
+    var jsPDF = window.jspdf.jsPDF;
+    var name  = payload.name || 'Trabajador';
+    var mIdx  = parseInt(payload.month);
+    var year  = parseInt(payload.year);
+    var ch    = parseFloat(payload.hours) || 40;
+    var data  = payload.data || {};
+    var mName = MONTHS[mIdx];
+    var dim   = new Date(year, mIdx+1, 0).getDate();
+    var doc   = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    var W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight(), mg=14;
+    var PRI=[29,78,216],PL=[59,130,246],SUC=[16,185,129],ACC=[245,158,11],DAN=[220,38,38];
+    var GRY=[100,116,139],LBG=[241,245,249],BOR=[226,232,240],TXT=[15,23,42];
 
-    var doc   = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
-    var W     = doc.internal.pageSize.getWidth();
-    var H     = doc.internal.pageSize.getHeight();
-    var mg    = 14;
-    var PRI   = [29,78,216], PL=[59,130,246], SUC=[16,185,129];
-    var ACC   = [245,158,11], DAN=[220,38,38], GRY=[100,116,139];
-    var LBG   = [241,245,249], BOR=[226,232,240], TXT=[15,23,42];
-
-    doc.setFillColor(PRI[0],PRI[1],PRI[2]);
-    doc.roundedRect(mg,10,W-mg*2,28,4,4,'F');
+    doc.setFillColor(PRI[0],PRI[1],PRI[2]); doc.roundedRect(mg,10,W-mg*2,28,4,4,'F');
     doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(16);
-    doc.text('Control de Horas Laborales', mg+6, 21);
+    doc.text('Control de Horas Laborales',mg+6,21);
     doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(200,215,255);
-    doc.text('Registro de jornada y horas extraordinarias', mg+6, 27);
+    doc.text('Registro de jornada y horas extraordinarias',mg+6,27);
     doc.setFillColor(255,255,255); doc.roundedRect(W-mg-44,14,42,12,3,3,'F');
     doc.setTextColor(PRI[0],PRI[1],PRI[2]); doc.setFont('helvetica','bold'); doc.setFontSize(9);
-    doc.text(monthName+' '+year, W-mg-23, 21.5, {align:'center'});
+    doc.text(mName+' '+year,W-mg-23,21.5,{align:'center'});
 
-    var y = 46;
+    var y=46;
     doc.setFillColor(LBG[0],LBG[1],LBG[2]); doc.roundedRect(mg,y,W-mg*2,14,3,3,'F');
     doc.setTextColor(GRY[0],GRY[1],GRY[2]); doc.setFont('helvetica','normal'); doc.setFontSize(8);
-    doc.text('TRABAJADOR', mg+5, y+5.5); doc.text('JORNADA SEMANAL', mg+90, y+5.5);
+    doc.text('TRABAJADOR',mg+5,y+5.5); doc.text('JORNADA SEMANAL',mg+90,y+5.5);
     doc.setTextColor(TXT[0],TXT[1],TXT[2]); doc.setFont('helvetica','bold'); doc.setFontSize(10);
-    doc.text(name, mg+5, y+11); doc.text(contractHours+'h / semana', mg+90, y+11);
+    doc.text(name,mg+5,y+11); doc.text(ch+'h / semana',mg+90,y+11);
 
-    var workDays=0, totalMins=0, workedDays=0, dayMinsMap={};
-    for (var d=1; d<=daysInMonth; d++) {
-        var dow=new Date(year,monthIdx,d).getDay(), isWk=(dow===0||dow===6);
-        var dd=currentData[d]||null, isH=!isWk&&dd&&dd.isHoliday;
-        if (!isWk&&!isH) workDays++;
+    var wDays=0,totMins=0,wrkDays=0,dMap={};
+    for(var d=1;d<=dim;d++){
+        var dw=new Date(year,mIdx,d).getDay(),isWk=(dw===0||dw===6);
+        var dd=data[d]||null,isH=!isWk&&dd&&dd.isHoliday;
+        if(!isWk&&!isH)wDays++;
         var dm=dd&&dd.slots?calcDay(dd.slots):0;
-        dayMinsMap[d]=dm; if(dm>0)workedDays++; totalMins+=dm;
+        dMap[d]=dm; if(dm>0)wrkDays++; totMins+=dm;
     }
-    var tgtMins=workDays*(contractHours/5)*60;
-    var norMins=Math.min(totalMins,tgtMins), extMins=Math.max(0,totalMins-tgtMins);
-    var pct=tgtMins>0?Math.min(1,norMins/tgtMins):0;
+    var tgt=wDays*(ch/5)*60, nor=Math.min(totMins,tgt), ext=Math.max(0,totMins-tgt), pct=tgt>0?Math.min(1,nor/tgt):0;
 
     y+=20;
     doc.setTextColor(PRI[0],PRI[1],PRI[2]); doc.setFont('helvetica','bold'); doc.setFontSize(9);
-    doc.text('RESUMEN DEL MES', mg, y);
+    doc.text('RESUMEN DEL MES',mg,y);
     doc.setDrawColor(PL[0],PL[1],PL[2]); doc.setLineWidth(0.4); doc.line(mg,y+1.5,W-mg,y+1.5);
     y+=6;
     var cW=(W-mg*2-10)/3;
     var cards=[
-        {l:'Dias Laborables',v:String(workDays),c:GRY},
-        {l:'Objetivo Mensual',v:formatMins(tgtMins),c:PRI},
-        {l:'Dias Trabajados',v:String(workedDays),c:[124,58,237]},
-        {l:'Horas Normales',v:formatMins(norMins),c:SUC},
-        {l:'Horas Extras',v:formatMins(extMins),c:ACC},
-        {l:'Total Mensual',v:formatMins(totalMins),c:DAN}
+        {l:'Dias Laborables',v:String(wDays),c:GRY},{l:'Objetivo Mensual',v:formatMins(tgt),c:PRI},
+        {l:'Dias Trabajados',v:String(wrkDays),c:[124,58,237]},{l:'Horas Normales',v:formatMins(nor),c:SUC},
+        {l:'Horas Extras',v:formatMins(ext),c:ACC},{l:'Total Mensual',v:formatMins(totMins),c:DAN}
     ];
-    for (var ci=0;ci<cards.length;ci++) {
-        var ca=cards[ci], col=ci%3, row=Math.floor(ci/3);
-        var cx=mg+col*(cW+5), cy=y+row*22;
+    for(var ci=0;ci<cards.length;ci++){
+        var ca=cards[ci],col=ci%3,row=Math.floor(ci/3),cx=mg+col*(cW+5),cy=y+row*22;
         doc.setFillColor(LBG[0],LBG[1],LBG[2]); doc.roundedRect(cx,cy,cW,18,3,3,'F');
         doc.setFillColor(ca.c[0],ca.c[1],ca.c[2]); doc.roundedRect(cx,cy,cW,2,1,1,'F');
         doc.setTextColor(GRY[0],GRY[1],GRY[2]); doc.setFont('helvetica','normal'); doc.setFontSize(7);
@@ -227,17 +187,16 @@ function buildPDF(payload) {
     y+=5;
 
     var rows=[];
-    for (var d2=1;d2<=daysInMonth;d2++) {
-        var dt=new Date(year,monthIdx,d2), dw=dt.getDay();
-        var iW=(dw===0||dw===6), dD=currentData[d2]||null, iH=!iW&&dD&&dD.isHoliday;
-        var dN=DAYS_LBL[(dw+6)%7], dM=dayMinsMap[d2]||0;
-        var sl=(dD&&dD.slots)?dD.slots:[], tr=[];
+    for(var d2=1;d2<=dim;d2++){
+        var dt=new Date(year,mIdx,d2),dw2=dt.getDay();
+        var iW=(dw2===0||dw2===6),dD=data[d2]||null,iH=!iW&&dD&&dD.isHoliday;
+        var dN=DAYS_LBL[(dw2+6)%7],dM=dMap[d2]||0;
+        var sl=(dD&&dD.slots)?dD.slots:[],tr=[];
         for(var ti=0;ti<sl.length;ti++){if(sl[ti].start&&sl[ti].end)tr.push(sl[ti].start+'->'+sl[ti].end+(sl[ti].note?'('+sl[ti].note+')':''));}
-        var tipo=iW?'Fin semana':(iH?'Festivo':'Laborable');
-        rows.push([d2,dN,tipo,tr.join(' | ')||(iH?'Festivo':'-'),dM>0?formatMins(dM):'-',iW,iH,dM>0]);
+        rows.push([d2,dN,iW?'Fin semana':(iH?'Festivo':'Laborable'),tr.join(' | ')||(iH?'Festivo':'-'),dM>0?formatMins(dM):'-',iW,iH,dM>0]);
     }
     doc.autoTable({
-        startY:y, margin:{left:mg,right:mg},
+        startY:y,margin:{left:mg,right:mg},
         head:[['Dia','','Tipo','Tramos horarios','Total']],
         body:rows.map(function(r){return[r[0],r[1],r[2],r[3],r[4]];}),
         headStyles:{fillColor:PRI,textColor:[255,255,255],fontStyle:'bold',fontSize:8,cellPadding:3},
@@ -252,8 +211,7 @@ function buildPDF(payload) {
             }
         }
     });
-    var pc=doc.internal.getNumberOfPages(), td=new Date();
-    var ds=td.getDate()+'/'+(td.getMonth()+1)+'/'+td.getFullYear();
+    var pc=doc.internal.getNumberOfPages(),td=new Date(),ds=td.getDate()+'/'+(td.getMonth()+1)+'/'+td.getFullYear();
     for(var p=1;p<=pc;p++){
         doc.setPage(p); doc.setFontSize(7); doc.setTextColor(GRY[0],GRY[1],GRY[2]);
         doc.setFont('helvetica','normal');
@@ -264,12 +222,11 @@ function buildPDF(payload) {
 }
 
 function compartir() {
-    if (!fileBlob) { showError('Archivo no disponible.'); return; }
+    if (!fileBlob) return;
     try {
-        var file = new File([fileBlob], filename, {type: fileBlob.type});
+        var file = new File([fileBlob], filename, {type:fileBlob.type});
         if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
-            navigator.share({title:filename, files:[file]})
-                .catch(function(e){ if(e.name!=='AbortError') descargar(); });
+            navigator.share({title:filename, files:[file]}).catch(function(e){ if(e.name!=='AbortError') descargar(); });
             return;
         }
     } catch(e) {}
@@ -277,42 +234,22 @@ function compartir() {
 }
 
 function descargar() {
-    if (!fileBlob) { showError('Archivo no disponible.'); return; }
+    if (!fileBlob) return;
     try {
         var url = URL.createObjectURL(fileBlob);
         var a   = document.createElement('a');
         a.href=url; a.download=filename;
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        setTimeout(function(){URL.revokeObjectURL(url);}, 5000);
-    } catch(e) { showError('Error: ' + e.message); }
+        setTimeout(function(){URL.revokeObjectURL(url);},5000);
+    } catch(e) { showError('Error: '+e.message); }
 }
 
- function volverApp() {
-    // Recuperar la URL guardada
-    var appUrl = sessionStorage.getItem('appUrl');
-    
-    if (appUrl) {
-        // Volver a la URL guardada
-        sessionStorage.removeItem('appUrl');
-        window.location.href = appUrl;
-    } else {
-        // Fallback: construir URL del index
-        var currentUrl = window.location.href;
-        var indexUrl = currentUrl.split('?')[0].replace('share.html', 'index.html');
-        window.location.href = indexUrl;
-    }
-}   
-    
 window.onload = function() {
     var params  = new URLSearchParams(window.location.search);
     var type    = params.get('type') || 'pdf';
     var encoded = params.get('d');
     if (!encoded) { showError('No se recibieron datos. Vuelve a la app e intentalo de nuevo.'); return; }
-    if (type === 'backup') {
-        initBackup(encoded);
-    } else {
-        initPDF(encoded);
-    }
+    if (type === 'backup') { initBackup(encoded); } else { initPDF(encoded); }
 };
 </script>
 </body>
