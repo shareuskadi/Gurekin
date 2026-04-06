@@ -539,9 +539,59 @@
             .summary-grid { grid-template-columns: 1fr; }
             .summary-value { font-size: 1.3rem; }
         }
+
+        /* MODAL */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15,23,42,0.55);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-card {
+            background: white;
+            border-radius: 18px;
+            padding: 30px 24px;
+            text-align: center;
+            max-width: 340px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+        }
+        .modal-icon    { font-size: 44px; margin-bottom: 10px; }
+        .modal-title   { font-size: 1.2rem; font-weight: 700; color: #1d4ed8; margin-bottom: 4px; }
+        .modal-sub     { font-size: 0.82rem; color: #64748b; margin-bottom: 16px; }
+        .modal-fname   { font-size: 0.78rem; font-weight: 600; color: #0f172a; background: #f1f5f9; padding: 7px 12px; border-radius: 7px; margin-bottom: 18px; word-break: break-all; }
+        .modal-loading { color: #64748b; font-size: 0.88rem; margin: 12px 0; }
+        .modal-btns    { display: flex; flex-direction: column; gap: 8px; }
+        .modal-btns button { width: 100%; padding: 13px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+        .mbtn-share    { background: #2563eb; color: white; }
+        .mbtn-download { background: #10b981; color: white; }
+        .mbtn-close    { background: #f1f5f9; color: #475569; }
+        .modal-back-hint { margin-top: 14px; color: #94a3b8; font-size: 0.82rem; padding: 10px 12px; background: #f8fafc; border-radius: 8px; border: 1px dashed #e2e8f0; }
+        .modal-error   { color: #ef4444; font-size: 0.8rem; margin-top: 10px; padding: 8px; background: #fef2f2; border-radius: 7px; display:none; }
     </style>
 </head>
 <body>
+<!-- MODAL COMPARTIR/BACKUP -->
+<div class="modal-overlay" id="modal-overlay" onclick="modalClickOutside(event)">
+    <div class="modal-card" id="modal-card">
+        <div class="modal-icon" id="modal-icon">&#128196;</div>
+        <div class="modal-title" id="modal-title">Archivo listo</div>
+        <div class="modal-sub" id="modal-sub">Elige como quieres guardarlo</div>
+        <div class="modal-fname" id="modal-fname"></div>
+        <div class="modal-loading" id="modal-loading">Generando...</div>
+        <div class="modal-btns" id="modal-btns" style="display:none">
+            <button class="mbtn-share"    onclick="modalCompartir()">&#8599; Compartir (WhatsApp, email...)</button>
+            <button class="mbtn-download" onclick="modalDescargar()">&#8595; Guardar en el movil</button>
+            <div class="modal-back-hint">Se abrira el navegador para gestionar el archivo.<br>&#8592; Usa la flecha <b>Atras</b> del movil para volver a la app.</div>
+        </div>
+        <div class="modal-error" id="modal-error"></div>
+    </div>
+</div>
 <div class="container">
 
     <header>
@@ -960,18 +1010,9 @@
         var today   = new Date();
         var dateStr = today.getFullYear() + '-' + (today.getMonth()+1) + '-' + today.getDate();
         var fname   = 'backup_gurekin_' + dateStr + '.json';
-        var encoded = btoa(unescape(encodeURIComponent(JSON.stringify({filename:fname, content:all}))));
-        var base    = window.location.href.split('/').slice(0,-1).join('/');
-        // Para exportar PDF o backup
-function abrirShare(tipo, datos) {
-    var url = 'share.html?type=' + tipo + '&d=' + datos;
-    
-    // Guardar la URL actual en sessionStorage para volver
-    sessionStorage.setItem('appUrl', window.location.href);
-    
-    // Navegar directamente (NO window.open)
-    window.location.href = url;
-}
+        var json    = JSON.stringify(all, null, 2);
+        var blob    = new Blob([json], {type:'application/json'});
+        abrirModal('backup', blob, fname);
     }
 
     function restoreBackup() {
@@ -1198,20 +1239,113 @@ function abrirShare(tipo, datos) {
             alert('El generador de PDF no esta disponible. Comprueba la conexion a internet e intentalo de nuevo.');
             return;
         }
+        // Mostrar modal en estado cargando mientras se genera el PDF
+        abrirModal('pdf', null, '');
+        // Generar PDF de forma diferida para que el modal se muestre primero
+        setTimeout(function() {
+            try {
+                var result   = buildPDFDoc();
+                var doc      = result.doc;
+                var name     = result.name;
+                var monthName= result.monthName;
+                var year     = result.year;
+                var fname    = 'horas_' + name.replace(/\s+/g,'_') + '_' + monthName + '_' + year + '.pdf';
+                var blob     = doc.output('blob');
+                modalListo(blob, fname);
+            } catch(e) {
+                modalError('Error al generar el PDF: ' + e.message);
+            }
+        }, 50);
+    }
 
-        var payload = {
-            name:  document.getElementById('worker-name').value || 'Trabajador',
-            hours: document.getElementById('contract-hours').value || 40,
-            month: document.getElementById('month-select').value,
-            year:  document.getElementById('year-input').value,
-            data:  currentData
-        };
+    // ── MODAL ────────────────────────────────────────────────────────────
+    var modalBlob     = null;
+    var modalFilename = '';
 
-        var encoded  = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-        var base     = window.location.href.split('/').slice(0,-1).join('/');
-        var shareUrl = base + '/share.html?d=' + encoded;
+    function abrirModal(tipo, blob, fname) {
+        modalBlob     = blob;
+        modalFilename = fname;
+        var overlay = document.getElementById('modal-overlay');
+        var icon    = document.getElementById('modal-icon');
+        var title   = document.getElementById('modal-title');
+        var sub     = document.getElementById('modal-sub');
+        var fnEl    = document.getElementById('modal-fname');
+        var loading = document.getElementById('modal-loading');
+        var btns    = document.getElementById('modal-btns');
+        var err     = document.getElementById('modal-error');
 
-        window.open(shareUrl, '_blank');
+        if (tipo === 'pdf') {
+            icon.textContent  = String.fromCharCode(128196);
+            title.textContent = 'Generando PDF...';
+            sub.textContent   = 'Espera un momento';
+        } else {
+            icon.textContent  = String.fromCharCode(128190);
+            title.textContent = 'Backup listo';
+            sub.textContent   = 'Elige como quieres guardarlo';
+        }
+        fnEl.textContent      = fname || '';
+        loading.style.display = blob ? 'none' : 'block';
+        btns.style.display    = blob ? 'flex'  : 'none';
+        err.style.display     = 'none';
+        err.textContent       = '';
+        overlay.className     = 'modal-overlay open';
+    }
+
+    function modalListo(blob, fname) {
+        modalBlob     = blob;
+        modalFilename = fname;
+        document.getElementById('modal-title').textContent   = 'Listo para compartir';
+        document.getElementById('modal-sub').textContent     = 'Elige como quieres enviarlo';
+        document.getElementById('modal-fname').textContent   = fname;
+        document.getElementById('modal-loading').style.display = 'none';
+        document.getElementById('modal-btns').style.display    = 'flex';
+    }
+
+    function modalError(msg) {
+        document.getElementById('modal-loading').style.display = 'none';
+        var err = document.getElementById('modal-error');
+        err.textContent   = msg;
+        err.style.display = 'block';
+    }
+
+    function cerrarModal() {
+        document.getElementById('modal-overlay').className = 'modal-overlay';
+        modalBlob = null;
+    }
+
+    function modalClickOutside(e) {
+        if (e.target === document.getElementById('modal-overlay')) cerrarModal();
+    }
+
+    function modalCompartir() {
+        if (!modalBlob) return;
+        try {
+            var file = new File([modalBlob], modalFilename, {type: modalBlob.type});
+            if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
+                navigator.share({title: modalFilename, files: [file]})
+                    .then(function() { cerrarModal(); })
+                    .catch(function(e) { if (e.name !== 'AbortError') modalDescargar(); });
+                return;
+            }
+        } catch(e) {}
+        modalDescargar();
+    }
+
+    function modalDescargar() {
+        if (!modalBlob) return;
+        try {
+            var url = URL.createObjectURL(modalBlob);
+            var a   = document.createElement('a');
+            a.href  = url;
+            a.download = modalFilename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
+            cerrarModal();
+        } catch(e) {
+            modalError('Error al guardar: ' + e.message);
+        }
     }
 
     window.onload = init;
