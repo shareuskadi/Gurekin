@@ -1157,16 +1157,9 @@
         var today   = new Date();
         var dateStr = today.getFullYear() + '-' + (today.getMonth()+1) + '-' + today.getDate();
         var fname   = 'backup_gurekin_' + dateStr + '.json';
-        var json    = JSON.stringify(all, null, 2);
-        var blob    = new Blob([json], {type: 'application/json'});
-        var url     = URL.createObjectURL(blob);
-        var a       = document.createElement('a');
-        a.href      = url;
-        a.download  = fname;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        var encoded = btoa(unescape(encodeURIComponent(JSON.stringify({filename:fname, content:all}))));
+        var base    = window.location.href.split('/').slice(0,-1).join('/');
+        window.open(base + '/share.html?type=backup&d=' + encoded, '_blank');
     }
 
     function restoreBackup() {
@@ -1180,8 +1173,6 @@
             reader.onload = function(ev) {
                 try {
                     var data = JSON.parse(ev.target.result);
-                    // Compatibilidad con backups antiguos (formato {filename, content})
-                    if (data.content && typeof data.content === 'object') data = data.content;
                     if (confirm('Restaurar el backup? Se sobrescribiran los datos actuales.')) {
                         var keys = [];
                         for (var i = 0; i < localStorage.length; i++) {
@@ -1397,9 +1388,20 @@
             alert('El generador de PDF no esta disponible. Comprueba la conexion a internet e intentalo de nuevo.');
             return;
         }
-        var result = buildPDFDoc();
-        var fname  = 'horas_' + result.name + '_' + result.monthName + '_' + result.year + '.pdf';
-        result.doc.save(fname);
+
+        var payload = {
+            name:  document.getElementById('worker-name').value || 'Trabajador',
+            hours: document.getElementById('contract-hours').value || 40,
+            month: document.getElementById('month-select').value,
+            year:  document.getElementById('year-input').value,
+            data:  currentData
+        };
+
+        var encoded  = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+        var base     = window.location.href.split('/').slice(0,-1).join('/');
+        var shareUrl = base + '/share.html?d=' + encoded;
+
+        window.open(shareUrl, '_blank');
     }
 
     function abrirAyuda() {
