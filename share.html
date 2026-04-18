@@ -145,12 +145,12 @@ function buildPDF(payload) {
     doc.text(name,mg+5,y+11); doc.text(ch+'h / semana',mg+90,y+11);
 
     var wDays=0,totMins=0,wrkDays=0,dMap={};
-    var dailyMins = (ch/5)*60;
+    var dailyMins=(ch/5)*60;
     for(var d=1;d<=dim;d++){
         var dw=new Date(year,mIdx,d).getDay(),isWk=(dw===0||dw===6);
         var dd=data[d]||null,isH=!isWk&&dd&&dd.isHoliday,isV=!isWk&&dd&&dd.isVacation;
         if(!isWk&&!isH)wDays++;
-        var dm=dd&&dd.slots?calcDay(dd.slots,isV,dailyMins):0;
+        var dm=calcDay(dd&&dd.slots?dd.slots:[], isV, dailyMins);
         dMap[d]=dm; if(dm>0)wrkDays++; totMins+=dm;
     }
     var tgt=wDays*(ch/5)*60, nor=Math.min(totMins,tgt), ext=Math.max(0,totMins-tgt), pct=tgt>0?Math.min(1,nor/tgt):0;
