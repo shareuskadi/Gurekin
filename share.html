@@ -61,7 +61,8 @@ function formatMins(m) {
     return h + 'h' + (mins > 0 ? ' ' + mins + 'm' : '');
 }
 
-function calcDay(slots) {
+function calcDay(slots, isVacation, dailyMins) {
+    if (isVacation) return Math.round(dailyMins);
     var mins = 0;
     for (var i = 0; i < slots.length; i++) {
         var s = slots[i];
@@ -144,11 +145,12 @@ function buildPDF(payload) {
     doc.text(name,mg+5,y+11); doc.text(ch+'h / semana',mg+90,y+11);
 
     var wDays=0,totMins=0,wrkDays=0,dMap={};
+    var dailyMins = (ch/5)*60;
     for(var d=1;d<=dim;d++){
         var dw=new Date(year,mIdx,d).getDay(),isWk=(dw===0||dw===6);
-        var dd=data[d]||null,isH=!isWk&&dd&&dd.isHoliday;
+        var dd=data[d]||null,isH=!isWk&&dd&&dd.isHoliday,isV=!isWk&&dd&&dd.isVacation;
         if(!isWk&&!isH)wDays++;
-        var dm=dd&&dd.slots?calcDay(dd.slots):0;
+        var dm=dd&&dd.slots?calcDay(dd.slots,isV,dailyMins):0;
         dMap[d]=dm; if(dm>0)wrkDays++; totMins+=dm;
     }
     var tgt=wDays*(ch/5)*60, nor=Math.min(totMins,tgt), ext=Math.max(0,totMins-tgt), pct=tgt>0?Math.min(1,nor/tgt):0;
@@ -189,11 +191,13 @@ function buildPDF(payload) {
     var rows=[];
     for(var d2=1;d2<=dim;d2++){
         var dt=new Date(year,mIdx,d2),dw2=dt.getDay();
-        var iW=(dw2===0||dw2===6),dD=data[d2]||null,iH=!iW&&dD&&dD.isHoliday;
+        var iW=(dw2===0||dw2===6),dD=data[d2]||null,iH=!iW&&dD&&dD.isHoliday,iV=!iW&&dD&&dD.isVacation;
         var dN=DAYS_LBL[(dw2+6)%7],dM=dMap[d2]||0;
         var sl=(dD&&dD.slots)?dD.slots:[],tr=[];
         for(var ti=0;ti<sl.length;ti++){if(sl[ti].start&&sl[ti].end)tr.push(sl[ti].start+'->'+sl[ti].end+(sl[ti].note?'('+sl[ti].note+')':''));}
-        rows.push([d2,dN,iW?'Fin semana':(iH?'Festivo':'Laborable'),tr.join(' | ')||(iH?'Festivo':'-'),dM>0?formatMins(dM):'-',iW,iH,dM>0]);
+        var tipo=iW?'Fin semana':(iH?'Festivo':(iV?'Vacaciones':'Laborable'));
+        var trDesc=tr.join(' | ')||(iH?'Festivo':(iV?'Vacaciones':'-'));
+        rows.push([d2,dN,tipo,trDesc,dM>0?formatMins(dM):'-',iW,iH,dM>0,iV]);
     }
     doc.autoTable({
         startY:y,margin:{left:mg,right:mg},
@@ -207,6 +211,7 @@ function buildPDF(payload) {
             if(data.section==='body'){var r=rows[data.row.index];
                 if(r[5]){data.cell.styles.textColor=[148,163,184];data.cell.styles.fillColor=[248,250,252];}
                 else if(r[6]){data.cell.styles.fillColor=[255,251,235];data.cell.styles.textColor=[180,120,0];}
+                else if(r[8]){data.cell.styles.fillColor=[236,254,255];data.cell.styles.textColor=[8,145,178];}
                 else if(r[7]&&data.column.index===4){data.cell.styles.textColor=SUC;}
             }
         }
