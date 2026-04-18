@@ -372,6 +372,30 @@
 
         .holiday-check input { accent-color: var(--accent); }
 
+        .vacation-check {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.68rem;
+            color: #0891b2;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .vacation-check input { accent-color: #0891b2; }
+
+        .day.vacation {
+            background: linear-gradient(135deg, #ecfeff, #f0fdff);
+            border-color: #67e8f9;
+        }
+
+        .day.vacation .day-total {
+            color: #0891b2;
+            background: rgba(8,145,178,0.1);
+        }
+
         /* TIME SLOTS */
         .time-slot {
             background: var(--surface2);
@@ -626,14 +650,16 @@
             background: rgba(255,255,255,0.18);
             border: 1.5px solid rgba(255,255,255,0.35);
             color: white;
-            border-radius: 50%;
-            width: 34px; height: 34px;
-            font-size: 1rem;
+            border-radius: 20px;
+            padding: 7px 14px;
+            font-size: 0.82rem;
             font-weight: 700;
             cursor: pointer;
             display: flex; align-items: center; justify-content: center;
+            gap: 5px;
             flex-shrink: 0;
             transition: background 0.2s;
+            letter-spacing: 0.03em;
         }
         .btn-ayuda:hover { background: rgba(255,255,255,0.28); }
     </style>
@@ -649,38 +675,41 @@
         </div>
         <div class="ayuda-body">
             <h4>Configuracion inicial</h4>
-            <p>Introduce el nombre del trabajador y el numero de horas semanales del contrato. Estos datos quedan guardados automaticamente en el telefono.</p>
+            <p>Introduce el nombre del trabajador y el número de horas semanales del contrato. Estos datos quedan guardados automaticamente en el teléfono.</p>
 
             <h4>Registro diario</h4>
-            <p>Introduce la hora de entrada y salida de cada dia. Si necesitas mas tramos horarios (por ejemplo una pausa al mediodia) pulsa <span class="tag">+ Anadir tramo</span> para agregar nuevas entradas y salidas en el mismo dia.</p>
+            <p>Introduce la hora de entrada y salida de cada dia. Si necesitas más tramos horarios (por ejemplo una pausa al mediodia) pulsa <span class="tag">+ Anadir tramo</span> para agregar nuevas entradas y salidas en el mismo día.</p>
 
             <h4>Festivos</h4>
-            <p>Los fines de semana se excluyen automaticamente del calculo. Si algun dia entre semana es festivo marca el recuadro <span class="tag">Festivo</span> de ese dia para que los calculos sean correctos.</p>
+            <p>Los fines de semana se excluyen automaticamente del calculo. Si algun dia entre semana es festivo marca el recuadro <span class="tag">Festivo</span> de ese día para que los cálculos sean correctos.</p>
+
+            <h4>Vacaciones</h4>
+            <p>Si un día es de vacaciones marca el recuadro <span class="tag">Vacaciones</span> de ese día. Los días marcados como vacaciones cuentan automáticamente como una jornada laboral completa (horas semanales divididas entre 5). Por ejemplo, si tienes contratadas 40 horas semanales, cada día de vacaciones sumara 8 horas al total del mes.</p>
 
             <h4>Boton BACKUP</h4>
-            <p>Guarda una copia de todos los datos introducidos. Es recomendable guardar ese archivo en otro dispositivo o enviarlo por WhatsApp por si se rompe el telefono. El archivo se llama <span class="tag">backup_gurekin_ANO-MES-DIA.json</span> y se guarda en la carpeta <span class="tag">Descargas</span>.</p>
+            <p>Guarda una copia de todos los datos introducidos. Es recomendable guardar ese archivo en otro dispositivo o enviarlo por WhatsApp por si se rompe el telefono. El archivo se llama <span class="tag">backup_gurekin_AÑO-MES-DIA.json</span> y se guarda en la carpeta <span class="tag">Descargas</span>.</p>
 
             <h4>Boton RESTAURAR</h4>
-            <p>Permite recuperar todos los datos a partir de un archivo de backup guardado anteriormente. <b>Atencion:</b> esta accion borra todos los datos actuales y los reemplaza por los del archivo seleccionado.</p>
+            <p>Permite recuperar todos los datos a partir de un archivo de backup guardado anteriormente. <b>Atención:</b> esta acción borra todos los datos actuales y los reemplaza por los del archivo seleccionado.</p>
 
             <h4>Boton COMPARTIR MES</h4>
-            <p>Genera y comparte un PDF del mes visible en pantalla con todas las estadisticas. Tambien se puede guardar en el telefono en la carpeta <span class="tag">Descargas</span>. El archivo se llama <span class="tag">horas_TRABAJADOR_MES_ANO.pdf</span>.</p>
+            <p>Genera y comparte un PDF del mes visible en pantalla con todas las estadísticas. Tambien se puede guardar en el teléfono en la carpeta <span class="tag">Descargas</span>. El archivo se llama <span class="tag">horas_TRABAJADOR_MES_AÑO.pdf</span>.</p>
 
             <h4>Boton GUARDAR</h4>
             <p>Guarda los datos manualmente. En condiciones normales no es necesario usarlo ya que el programa guarda automaticamente cada vez que introduces un dato nuevo.</p>
         </div>
-        <div class="ayuda-footer">&#169; 2026 Asier Casado</div>
+        <div class="ayuda-footer">&#169; 2026 Asier Casado Juaristi</div>
     </div>
 </div>
 <div class="container">
 
     <header>
         <div class="header-left">
-            <h1>⏱Control de Horas</h1>
-            <p>Versión 4.26 @Asier Casado 2026</p>
+            <h1>⏱ Control de Horas Gurekin</h1>
+            <p>Versión 4.30 @Asier Casado Juaristi 2026</p>
         </div>
         <div class="header-badge" id="header-month-label">—</div>
-        <button class="btn-ayuda" onclick="abrirAyuda()" title="Ayuda">?</button>
+        <button class="btn-ayuda" onclick="abrirAyuda()" title="Ayuda">&#63; Ayuda</button>
     </header>
 
     <div class="worker-config">
@@ -814,12 +843,14 @@
             var isToday   = (today.getDate() === d && today.getMonth() === month && today.getFullYear() === year);
             var dayData   = currentData[d] || null;
             var isHoliday = !isWeekend && dayData && dayData.isHoliday;
+            var isVacation = !isWeekend && dayData && dayData.isVacation;
             var dayName   = DAYS_FULL[(dow + 6) % 7];
 
             var cls = 'day';
-            if (isWeekend) cls += ' weekend';
-            if (isToday)   cls += ' current-day';
-            if (isHoliday) cls += ' holiday';
+            if (isWeekend)  cls += ' weekend';
+            if (isToday)    cls += ' current-day';
+            if (isHoliday)  cls += ' holiday';
+            if (isVacation) cls += ' vacation';
 
             var dayEl = document.createElement('div');
             dayEl.id = 'day-card-' + d;
@@ -863,6 +894,17 @@
                 label.appendChild(cb);
                 label.appendChild(document.createTextNode(' Festivo'));
                 dayEl.appendChild(label);
+
+                // Vacation checkbox
+                var labelVac = document.createElement('label');
+                labelVac.className = 'vacation-check';
+                var cbVac = document.createElement('input');
+                cbVac.type = 'checkbox';
+                cbVac.checked = !!(dayData && dayData.isVacation);
+                cbVac.setAttribute('onchange', 'updateVacation(' + d + ', this.checked)');
+                labelVac.appendChild(cbVac);
+                labelVac.appendChild(document.createTextNode(' Vacaciones'));
+                dayEl.appendChild(labelVac);
             }
 
             // Slots container
@@ -977,6 +1019,22 @@
         autoSave();
     }
 
+    function updateVacation(day, value) {
+        if (!currentData[day]) currentData[day] = {slots:[], isHoliday:false, isVacation:false};
+        currentData[day].isVacation = value;
+        var card = document.getElementById('day-card-' + day);
+        if (card) {
+            if (value) {
+                if (card.className.indexOf(' vacation') === -1) card.className += ' vacation';
+            } else {
+                card.className = card.className.replace(' vacation', '');
+            }
+        }
+        calculateDay(day);
+        updateSummary();
+        autoSave();
+    }
+
     function refreshDay(day) {
         var container = document.getElementById('slots-' + day);
         container.innerHTML = '';
@@ -991,20 +1049,28 @@
 
     function calculateDay(day) {
         var dayData = currentData[day] || null;
-        var slots = (dayData && dayData.slots) ? dayData.slots : [];
+        var isVacation = dayData && dayData.isVacation;
+
         var mins = 0;
-        for (var i = 0; i < slots.length; i++) {
-            var s = slots[i];
-            if (s.start && s.end) {
-                var p1 = s.start.split(':');
-                var p2 = s.end.split(':');
-                var h1 = parseInt(p1[0]), m1 = parseInt(p1[1]);
-                var h2 = parseInt(p2[0]), m2 = parseInt(p2[1]);
-                var diff = (h2*60+m2) - (h1*60+m1);
-                if (diff < 0) diff += 1440;
-                mins += diff;
+        if (isVacation) {
+            var contractHours = parseFloat(document.getElementById('contract-hours').value) || 40;
+            mins = Math.round((contractHours / 5) * 60);
+        } else {
+            var slots = (dayData && dayData.slots) ? dayData.slots : [];
+            for (var i = 0; i < slots.length; i++) {
+                var s = slots[i];
+                if (s.start && s.end) {
+                    var p1 = s.start.split(':');
+                    var p2 = s.end.split(':');
+                    var h1 = parseInt(p1[0]), m1 = parseInt(p1[1]);
+                    var h2 = parseInt(p2[0]), m2 = parseInt(p2[1]);
+                    var diff = (h2*60+m2) - (h1*60+m1);
+                    if (diff < 0) diff += 1440;
+                    mins += diff;
+                }
             }
         }
+
         var el = document.getElementById('total-' + day);
         if (el) {
             el.textContent = formatMins(mins);
@@ -1260,6 +1326,7 @@
             var isWknd    = (dow2 === 0 || dow2 === 6);
             var dData     = currentData[dd] || null;
             var isHol     = !isWknd && dData && dData.isHoliday;
+            var isVac     = !isWknd && dData && dData.isVacation;
             var dName     = DAYS_FULL[(dow2+6) % 7];
             var dMins     = calculateDay(dd);
             var dSlots    = (dData && dData.slots) ? dData.slots : [];
@@ -1268,8 +1335,8 @@
                 var sl = dSlots[ti];
                 if (sl.start && sl.end) tramos.push(sl.start + '->' + sl.end + (sl.note ? ' (' + sl.note + ')' : ''));
             }
-            var tipo = isWknd ? 'Fin semana' : (isHol ? 'Festivo' : 'Laborable');
-            rows.push([dd, dName, tipo, tramos.join(' | ') || (isHol ? 'Festivo' : '-'), dMins > 0 ? formatMins(dMins) : '-', isWknd, isHol, dMins > 0]);
+            var tipo = isWknd ? 'Fin semana' : (isHol ? 'Festivo' : (isVac ? 'Vacaciones' : 'Laborable'));
+            rows.push([dd, dName, tipo, tramos.join(' | ') || (isHol ? 'Festivo' : (isVac ? 'Vacaciones' : '-')), dMins > 0 ? formatMins(dMins) : '-', isWknd, isHol, dMins > 0, isVac]);
         }
 
         doc.autoTable({
@@ -1292,6 +1359,7 @@
                     var r = rows[data.row.index];
                     if (r[5]) { data.cell.styles.textColor = [148,163,184]; data.cell.styles.fillColor = [248,250,252]; }
                     else if (r[6]) { data.cell.styles.fillColor = [255,251,235]; data.cell.styles.textColor = [180,120,0]; }
+                    else if (r[8]) { data.cell.styles.fillColor = [236,254,255]; data.cell.styles.textColor = [8,145,178]; }
                     else if (r[7] && data.column.index === 4) { data.cell.styles.textColor = SUCCESS; }
                 }
             }
