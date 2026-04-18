@@ -372,6 +372,30 @@
 
         .holiday-check input { accent-color: var(--accent); }
 
+        .vacation-check {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.68rem;
+            color: #0891b2;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .vacation-check input { accent-color: #0891b2; }
+
+        .day.vacation {
+            background: linear-gradient(135deg, #ecfeff, #f0fdff);
+            border-color: #67e8f9;
+        }
+
+        .day.vacation .day-total {
+            color: #0891b2;
+            background: rgba(8,145,178,0.1);
+        }
+
         /* TIME SLOTS */
         .time-slot {
             background: var(--surface2);
@@ -539,17 +563,153 @@
             .summary-grid { grid-template-columns: 1fr; }
             .summary-value { font-size: 1.3rem; }
         }
+
+        /* MODAL AYUDA */
+        .ayuda-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15,23,42,0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .ayuda-overlay.open { display: flex; }
+        .ayuda-card {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 480px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .ayuda-header {
+            background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+            color: white;
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .ayuda-header h3 { font-size: 1.05rem; font-weight: 700; margin: 0; }
+        .ayuda-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .ayuda-body {
+            padding: 20px;
+            overflow-y: auto;
+            font-size: 0.88rem;
+            line-height: 1.65;
+            color: #1e293b;
+        }
+        .ayuda-body h4 {
+            color: #1d4ed8;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            margin: 18px 0 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .ayuda-body h4:first-child { margin-top: 0; }
+        .ayuda-body p { margin-bottom: 10px; color: #334155; }
+        .ayuda-body .tag {
+            display: inline-block;
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+            border-radius: 5px;
+            padding: 1px 7px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+        .ayuda-footer {
+            padding: 12px 20px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            flex-shrink: 0;
+        }
+        /* Boton ayuda en header */
+        .btn-ayuda {
+            background: rgba(255,255,255,0.18);
+            border: 1.5px solid rgba(255,255,255,0.35);
+            color: white;
+            border-radius: 20px;
+            padding: 7px 14px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            gap: 5px;
+            flex-shrink: 0;
+            transition: background 0.2s;
+            letter-spacing: 0.03em;
+        }
+        .btn-ayuda:hover { background: rgba(255,255,255,0.28); }
     </style>
 </head>
 <body>
+
+<!-- MODAL AYUDA -->
+<div class="ayuda-overlay" id="ayuda-overlay" onclick="ayudaClickOutside(event)">
+    <div class="ayuda-card">
+        <div class="ayuda-header">
+            <h3>? Ayuda - Control de Horas Gurekin</h3>
+            <button class="ayuda-close" onclick="cerrarAyuda()">&#10005;</button>
+        </div>
+        <div class="ayuda-body">
+            <h4>Configuracion inicial</h4>
+            <p>Introduce el nombre del trabajador y el número de horas semanales del contrato. Estos datos quedan guardados automaticamente en el teléfono.</p>
+
+            <h4>Registro diario</h4>
+            <p>Introduce la hora de entrada y salida de cada dia. Si necesitas más tramos horarios (por ejemplo una pausa al mediodia) pulsa <span class="tag">+ Anadir tramo</span> para agregar nuevas entradas y salidas en el mismo día.</p>
+
+            <h4>Festivos</h4>
+            <p>Los fines de semana se excluyen automaticamente del calculo. Si algun dia entre semana es festivo marca el recuadro <span class="tag">Festivo</span> de ese día para que los cálculos sean correctos.</p>
+
+            <h4>Vacaciones</h4>
+            <p>Si un día es de vacaciones marca el recuadro <span class="tag">Vacaciones</span> de ese día. Los días marcados como vacaciones cuentan automáticamente como una jornada laboral completa (horas semanales divididas entre 5). Por ejemplo, si tienes contratadas 40 horas semanales, cada día de vacaciones sumara 8 horas al total del mes.</p>
+
+            <h4>Boton BACKUP</h4>
+            <p>Guarda una copia de todos los datos introducidos. Es recomendable guardar ese archivo en otro dispositivo o enviarlo por WhatsApp por si se rompe el telefono. El archivo se llama <span class="tag">backup_gurekin_AÑO-MES-DIA.json</span> y se guarda en la carpeta <span class="tag">Descargas</span>.</p>
+
+            <h4>Boton RESTAURAR</h4>
+            <p>Permite recuperar todos los datos a partir de un archivo de backup guardado anteriormente. <b>Atención:</b> esta acción borra todos los datos actuales y los reemplaza por los del archivo seleccionado.</p>
+
+            <h4>Boton COMPARTIR MES</h4>
+            <p>Genera y comparte un PDF del mes visible en pantalla con todas las estadísticas. Tambien se puede guardar en el teléfono en la carpeta <span class="tag">Descargas</span>. El archivo se llama <span class="tag">horas_TRABAJADOR_MES_AÑO.pdf</span>.</p>
+
+            <h4>Boton GUARDAR</h4>
+            <p>Guarda los datos manualmente. En condiciones normales no es necesario usarlo ya que el programa guarda automaticamente cada vez que introduces un dato nuevo.</p>
+        </div>
+        <div class="ayuda-footer">&#169; 2026 Asier Casado Juaristi</div>
+    </div>
+</div>
 <div class="container">
 
     <header>
         <div class="header-left">
-            <h1>⏱Control de Horas</h1>
-            <p>Registro de jornada y horas extraordinarias</p>
+            <h1>⏱ Control de Horas Gurekin</h1>
+            <p>Versión 4.30 @Asier Casado Juaristi 2026</p>
         </div>
         <div class="header-badge" id="header-month-label">—</div>
+        <button class="btn-ayuda" onclick="abrirAyuda()" title="Ayuda">&#63; Ayuda</button>
     </header>
 
     <div class="worker-config">
@@ -572,7 +732,7 @@
             <span id="autosave-indicator">✓ Guardado</span>
             <button class="btn-backup"  onclick="exportBackup()">⬇ Backup</button>
             <button class="btn-restore" onclick="restoreBackup()">⬆ Restaurar</button>
-            <button class="btn-pdf"     onclick="sharePDF()">↗ Compartir PDF</button>
+            <button class="btn-pdf"     onclick="sharePDF()">↗ Compartir mes</button>
             <button class="btn-save"    onclick="saveData(true)">💾 Guardar</button>
         </div>
     </div>
@@ -602,7 +762,7 @@
                 <div class="summary-progress"><div class="summary-progress-bar" id="progress-normal" style="width:0%"></div></div>
             </div>
             <div class="summary-card card-extra">
-                <div class="summary-label">Horas Extras</div>
+                <div class="summary-label">Horas complementarias</div>
                 <div class="summary-value" id="stat-extra">0h</div>
             </div>
             <div class="summary-card card-total">
@@ -683,12 +843,14 @@
             var isToday   = (today.getDate() === d && today.getMonth() === month && today.getFullYear() === year);
             var dayData   = currentData[d] || null;
             var isHoliday = !isWeekend && dayData && dayData.isHoliday;
+            var isVacation = !isWeekend && dayData && dayData.isVacation;
             var dayName   = DAYS_FULL[(dow + 6) % 7];
 
             var cls = 'day';
-            if (isWeekend) cls += ' weekend';
-            if (isToday)   cls += ' current-day';
-            if (isHoliday) cls += ' holiday';
+            if (isWeekend)  cls += ' weekend';
+            if (isToday)    cls += ' current-day';
+            if (isHoliday)  cls += ' holiday';
+            if (isVacation) cls += ' vacation';
 
             var dayEl = document.createElement('div');
             dayEl.id = 'day-card-' + d;
@@ -732,6 +894,17 @@
                 label.appendChild(cb);
                 label.appendChild(document.createTextNode(' Festivo'));
                 dayEl.appendChild(label);
+
+                // Vacation checkbox
+                var labelVac = document.createElement('label');
+                labelVac.className = 'vacation-check';
+                var cbVac = document.createElement('input');
+                cbVac.type = 'checkbox';
+                cbVac.checked = !!(dayData && dayData.isVacation);
+                cbVac.setAttribute('onchange', 'updateVacation(' + d + ', this.checked)');
+                labelVac.appendChild(cbVac);
+                labelVac.appendChild(document.createTextNode(' Vacaciones'));
+                dayEl.appendChild(labelVac);
             }
 
             // Slots container
@@ -743,7 +916,7 @@
             var addBtn = document.createElement('button');
             addBtn.className = 'btn-add';
             addBtn.setAttribute('onclick', 'addSlot(' + d + ')');
-            addBtn.textContent = '+ Añadir tramo';
+            addBtn.textContent = '+ Añadir tramo horario';
             dayEl.appendChild(addBtn);
 
             calendar.appendChild(dayEl);
@@ -846,6 +1019,22 @@
         autoSave();
     }
 
+    function updateVacation(day, value) {
+        if (!currentData[day]) currentData[day] = {slots:[], isHoliday:false, isVacation:false};
+        currentData[day].isVacation = value;
+        var card = document.getElementById('day-card-' + day);
+        if (card) {
+            if (value) {
+                if (card.className.indexOf(' vacation') === -1) card.className += ' vacation';
+            } else {
+                card.className = card.className.replace(' vacation', '');
+            }
+        }
+        calculateDay(day);
+        updateSummary();
+        autoSave();
+    }
+
     function refreshDay(day) {
         var container = document.getElementById('slots-' + day);
         container.innerHTML = '';
@@ -860,20 +1049,28 @@
 
     function calculateDay(day) {
         var dayData = currentData[day] || null;
-        var slots = (dayData && dayData.slots) ? dayData.slots : [];
+        var isVacation = dayData && dayData.isVacation;
+
         var mins = 0;
-        for (var i = 0; i < slots.length; i++) {
-            var s = slots[i];
-            if (s.start && s.end) {
-                var p1 = s.start.split(':');
-                var p2 = s.end.split(':');
-                var h1 = parseInt(p1[0]), m1 = parseInt(p1[1]);
-                var h2 = parseInt(p2[0]), m2 = parseInt(p2[1]);
-                var diff = (h2*60+m2) - (h1*60+m1);
-                if (diff < 0) diff += 1440;
-                mins += diff;
+        if (isVacation) {
+            var contractHours = parseFloat(document.getElementById('contract-hours').value) || 40;
+            mins = Math.round((contractHours / 5) * 60);
+        } else {
+            var slots = (dayData && dayData.slots) ? dayData.slots : [];
+            for (var i = 0; i < slots.length; i++) {
+                var s = slots[i];
+                if (s.start && s.end) {
+                    var p1 = s.start.split(':');
+                    var p2 = s.end.split(':');
+                    var h1 = parseInt(p1[0]), m1 = parseInt(p1[1]);
+                    var h2 = parseInt(p2[0]), m2 = parseInt(p2[1]);
+                    var diff = (h2*60+m2) - (h1*60+m1);
+                    if (diff < 0) diff += 1440;
+                    mins += diff;
+                }
             }
         }
+
         var el = document.getElementById('total-' + day);
         if (el) {
             el.textContent = formatMins(mins);
@@ -957,12 +1154,12 @@
                 all[k] = localStorage.getItem(k);
             }
         }
-        var blob = new Blob([JSON.stringify(all, null, 2)], {type:'application/json'});
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        var today = new Date();
-        a.download = 'backup_horas_' + today.getFullYear() + '-' + (today.getMonth()+1) + '-' + today.getDate() + '.json';
-        a.click();
+        var today   = new Date();
+        var dateStr = today.getFullYear() + '-' + (today.getMonth()+1) + '-' + today.getDate();
+        var fname   = 'backup_gurekin_' + dateStr + '.json';
+        var encoded = btoa(unescape(encodeURIComponent(JSON.stringify({filename:fname, content:all}))));
+        var base    = window.location.href.split('/').slice(0,-1).join('/');
+        window.open(base + '/share.html?type=backup&d=' + encoded, '_blank');
     }
 
     function restoreBackup() {
@@ -1027,7 +1224,7 @@
         doc.setFont('helvetica','normal');
         doc.setFontSize(9);
         doc.setTextColor(200,215,255);
-        doc.text('Registro de jornada y horas extraordinarias', margin+6, 27);
+        doc.text('Registro de jornada y horas complementarias', margin+6, 27);
         doc.setFillColor(255,255,255);
         doc.roundedRect(W-margin-44, 14, 42, 12, 3, 3, 'F');
         doc.setTextColor(PRIMARY[0],PRIMARY[1],PRIMARY[2]);
@@ -1067,7 +1264,7 @@
             {label:'Objetivo Mensual', value:document.getElementById('stat-target').textContent,  color:PRIMARY},
             {label:'Dias Trabajados',  value:document.getElementById('stat-days').textContent,    color:[124,58,237]},
             {label:'Horas Normales',   value:document.getElementById('stat-normal').textContent,  color:SUCCESS},
-            {label:'Horas Extras',     value:document.getElementById('stat-extra').textContent,   color:ACCENT},
+            {label:'Horas Complementarias',     value:document.getElementById('stat-extra').textContent,   color:ACCENT},
             {label:'Total Mensual',    value:document.getElementById('stat-total').textContent,   color:DANGER}
         ];
         for (var ci = 0; ci < cards.length; ci++) {
@@ -1129,6 +1326,7 @@
             var isWknd    = (dow2 === 0 || dow2 === 6);
             var dData     = currentData[dd] || null;
             var isHol     = !isWknd && dData && dData.isHoliday;
+            var isVac     = !isWknd && dData && dData.isVacation;
             var dName     = DAYS_FULL[(dow2+6) % 7];
             var dMins     = calculateDay(dd);
             var dSlots    = (dData && dData.slots) ? dData.slots : [];
@@ -1137,8 +1335,8 @@
                 var sl = dSlots[ti];
                 if (sl.start && sl.end) tramos.push(sl.start + '->' + sl.end + (sl.note ? ' (' + sl.note + ')' : ''));
             }
-            var tipo = isWknd ? 'Fin semana' : (isHol ? 'Festivo' : 'Laborable');
-            rows.push([dd, dName, tipo, tramos.join(' | ') || (isHol ? 'Festivo' : '-'), dMins > 0 ? formatMins(dMins) : '-', isWknd, isHol, dMins > 0]);
+            var tipo = isWknd ? 'Fin semana' : (isHol ? 'Festivo' : (isVac ? 'Vacaciones' : 'Laborable'));
+            rows.push([dd, dName, tipo, tramos.join(' | ') || (isHol ? 'Festivo' : (isVac ? 'Vacaciones' : '-')), dMins > 0 ? formatMins(dMins) : '-', isWknd, isHol, dMins > 0, isVac]);
         }
 
         doc.autoTable({
@@ -1161,6 +1359,7 @@
                     var r = rows[data.row.index];
                     if (r[5]) { data.cell.styles.textColor = [148,163,184]; data.cell.styles.fillColor = [248,250,252]; }
                     else if (r[6]) { data.cell.styles.fillColor = [255,251,235]; data.cell.styles.textColor = [180,120,0]; }
+                    else if (r[8]) { data.cell.styles.fillColor = [236,254,255]; data.cell.styles.textColor = [8,145,178]; }
                     else if (r[7] && data.column.index === 4) { data.cell.styles.textColor = SUCCESS; }
                 }
             }
@@ -1203,6 +1402,16 @@
         var shareUrl = base + '/share.html?d=' + encoded;
 
         window.open(shareUrl, '_blank');
+    }
+
+    function abrirAyuda() {
+        document.getElementById('ayuda-overlay').className = 'ayuda-overlay open';
+    }
+    function cerrarAyuda() {
+        document.getElementById('ayuda-overlay').className = 'ayuda-overlay';
+    }
+    function ayudaClickOutside(e) {
+        if (e.target === document.getElementById('ayuda-overlay')) cerrarAyuda();
     }
 
     window.onload = init;
